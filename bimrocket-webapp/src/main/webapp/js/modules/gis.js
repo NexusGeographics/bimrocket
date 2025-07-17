@@ -5,6 +5,7 @@
  */
 
 import { GeoJSONLoader } from "../io/gis/GeoJSONLoader.js";
+import { GMLLoader } from "../io/gis/GMLLoader.js";
 import { ASCIIGridLoader } from "../io/gis/ASCIIGridLoader.js";
 import { OnTerrainPositioner } from "../builders/OnTerrainPositioner.js";
 import { OnTerrainExtruder } from "../builders/OnTerrainExtruder.js";
@@ -24,6 +25,19 @@ export function load(application)
     loader :
     {
       class : GeoJSONLoader,
+      loadMethod : 0
+    }
+  };
+  
+  IOManager.formats["gml"] =
+  {
+    description : "GML (*.gml)",
+    extensions: ["gml"],
+    mimeType : "application/gml",
+    dataType : "text",
+    loader :
+    {
+      class : GMLLoader,
       loadMethod : 0
     }
   };
