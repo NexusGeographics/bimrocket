@@ -28,6 +28,19 @@ export function load(application)
       loadMethod : 0
     }
   };
+  
+  IOManager.formats["gml"] =
+  {
+    description : "GML (*.gml)",
+    extensions: ["gml"],
+    mimeType : "application/gml",
+    dataType : "text",
+    loader :
+    {
+      class : GMLLoader,
+      loadMethod : 0
+    }
+  };
 
   IOManager.formats["gml"] =
   {
