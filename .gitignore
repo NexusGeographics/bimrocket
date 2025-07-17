@@ -3,3 +3,4 @@
 /bimrocket-webapp/target/
 
 /bimrocket-server/docker/orientdb_data/
+.vscode/
