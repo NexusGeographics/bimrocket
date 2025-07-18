@@ -53,11 +53,20 @@
 			}
 		</script>
 
+    <script type="importmap">
+      {
+        "imports": {
+          "ol/": "https://cdn.jsdelivr.net/npm/ol@10.6.1/"
+        }
+      }
+		</script>
+
     <script type="module">
       import { Application } from "./js/ui/Application.js";
 
       window.bimrocket = new Application();
     </script>
+
   </head>
   <body>
     <div class="logo_panel loading">
