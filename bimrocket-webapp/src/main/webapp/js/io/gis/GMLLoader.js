@@ -11,6 +11,7 @@ import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
 import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
+import GML from 'ol/format/GML.js';
 
 let GML3, GML32, proj4, olProj4Register;
 let dependenciesPromise = null;
@@ -352,6 +353,7 @@ class GMLLoader extends GISLoader
         this.createNonVisibleObject(`${id}_nv`, props, featureGroup);
       }
     }
+    console.log('Feature Group: ', featureGroup);
     return featureGroup;
   }
 }
