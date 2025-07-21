@@ -11,7 +11,59 @@ import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
 import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
-import GML from 'ol/format/GML.js';
+import GML32 from 'ol/format/GML32.js';
+// import proj4 from '../../lib/proj4/index.js';
+// import { register } from 'ol/proj/proj4';
+
+function getGMLOptions(xmlString) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+  const GML_NS = "http://www.opengis.net/gml/3.2";
+
+  const memberEl = xmlDoc.querySelector(
+    "*|member, *|featureMember, *|featureMembers"
+  );
+  if (!memberEl || !memberEl.firstElementChild) {
+    console.warn("No se encontró ningún elemento de miembro de feature.");
+    return {};
+  }
+  const featureMemberTag = memberEl.tagName;
+
+  const featureEl    = memberEl.firstElementChild;
+  const featureType  = featureEl.localName;
+  const featureNS    = featureEl.namespaceURI;
+
+  const geomQ = featureEl.querySelector(
+    "*|Point, *|Polygon, *|LineString, *|MultiPoint, *|MultiPolygon, *|MultiLineString"
+  );
+  const geometryName = geomQ && geomQ.parentNode
+    ? geomQ.parentNode.localName
+    : null;
+  if (!geometryName) {
+    console.warn("No se pudo determinar 'geometryName'.");
+  }
+
+  const srsEl   = xmlDoc.querySelector("[srsName]");
+  const srsName = srsEl
+    ? srsEl.getAttribute("srsName").replace(
+        /urn:ogc:def:crs:EPSG:(\d+)/,
+        "EPSG:$1"
+      )
+    : null;
+
+  const options = {
+    featureNS,
+    featureType
+  };
+  if (geometryName) {
+    options.geometryName = geometryName;
+  }
+  if (srsName)              {options.srsName      = srsName;}
+  if (featureMemberTag)     { options.featureMember = featureMemberTag;}
+
+  console.log("Opciones GML detectadas:", options);
+  return options;
+}
 
 let GML3, GML32, proj4, olProj4Register;
 let dependenciesPromise = null;
@@ -353,7 +405,8 @@ class GMLLoader extends GISLoader
         this.createNonVisibleObject(`${id}_nv`, props, featureGroup);
       }
     }
-    console.log('Feature Group: ', featureGroup);
+
+    console.log("Feature Group GML:", featureGroup);
     return featureGroup;
   }
 }
