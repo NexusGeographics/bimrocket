@@ -12,8 +12,8 @@ import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
 import GML32 from 'ol/format/GML32.js';
-// import proj4 from '../../lib/proj4/index.js';
-// import { register } from 'ol/proj/proj4';
+import * as proj4Module from 'proj4';
+import { register } from "ol/proj/proj4.js";
 
 function getGMLOptions(xmlString) {
   const parser = new DOMParser();
