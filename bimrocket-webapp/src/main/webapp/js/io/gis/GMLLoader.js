@@ -18,32 +18,31 @@ import { register } from "ol/proj/proj4.js";
 function getGMLOptions(xmlString) {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-  const GML_NS = "http://www.opengis.net/gml/3.2";
-
   const memberEl = xmlDoc.querySelector(
     "*|member, *|featureMember, *|featureMembers"
   );
+
   if (!memberEl || !memberEl.firstElementChild) {
-    console.warn("No se encontró ningún elemento de miembro de feature.");
+    console.warn("No feature member element was found.");
     return {};
   }
+
   const featureMemberTag = memberEl.tagName;
-
-  const featureEl    = memberEl.firstElementChild;
-  const featureType  = featureEl.localName;
-  const featureNS    = featureEl.namespaceURI;
-
+  const featureEl = memberEl.firstElementChild;
+  const featureType = featureEl.localName;
+  const featureNS = featureEl.namespaceURI;
   const geomQ = featureEl.querySelector(
     "*|Point, *|Polygon, *|LineString, *|MultiPoint, *|MultiPolygon, *|MultiLineString"
   );
   const geometryName = geomQ && geomQ.parentNode
     ? geomQ.parentNode.localName
     : null;
+  
   if (!geometryName) {
-    console.warn("No se pudo determinar 'geometryName'.");
+    console.warn("Could not determine 'geometryName'.");
   }
 
-  const srsEl   = xmlDoc.querySelector("[srsName]");
+  const srsEl = xmlDoc.querySelector("[srsName]");
   const srsName = srsEl
     ? srsEl.getAttribute("srsName").replace(
         /urn:ogc:def:crs:EPSG:(\d+)/,
@@ -61,7 +60,6 @@ function getGMLOptions(xmlString) {
   if (srsName)              {options.srsName      = srsName;}
   if (featureMemberTag)     { options.featureMember = featureMemberTag;}
 
-  console.log("Opciones GML detectadas:", options);
   return options;
 }
 
@@ -405,8 +403,6 @@ class GMLLoader extends GISLoader
         this.createNonVisibleObject(`${id}_nv`, props, featureGroup);
       }
     }
-
-    console.log("Feature Group GML:", featureGroup);
     return featureGroup;
   }
 }
