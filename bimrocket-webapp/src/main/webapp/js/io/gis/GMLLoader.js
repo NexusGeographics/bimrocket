@@ -7,8 +7,8 @@
 import { GISLoader } from "./GISLoader.js";
 import * as THREE from "three";
 import GML32 from 'ol/format/GML32.js';
-// import proj4 from '../../lib/proj4/index.js';
-// import { register } from 'ol/proj/proj4';
+import * as proj4Module from 'proj4';
+import { register } from "ol/proj/proj4.js";
 
 function getGMLOptions(xmlString) {
   const parser = new DOMParser();
@@ -65,11 +65,11 @@ class GMLLoader extends GISLoader
   constructor(manager)
   {
     super(manager, "text/xml; subtype=gml/3.1.1");
-    // proj4.defs(
-    //     'EPSG:25831',
-    //     '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs'
-    // );
-    // register(proj4);
+    proj4Module.default.defs(
+        'EPSG:25831',
+        '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs'
+    );
+    register(proj4Module.default);
   }
 
   parse(xml) {
