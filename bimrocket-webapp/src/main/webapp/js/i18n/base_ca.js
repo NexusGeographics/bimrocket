@@ -120,6 +120,9 @@ export const translations =
   "tool.openlocal.label" : "Obre del disc local",
   "tool.openlocal.help" : "Obre del disc local",
 
+  "tool.wms_import.label" : "Introduir l'url del wms",
+  "tool.wms_import.help" : "Introdueix l'url del wms",
+
 /* wms import tool */
   "tool.wms_import.label" : "Introduir l'url del wms",
   "tool.wms_import.help" : "Introdueix l'url del wms",
@@ -586,6 +589,7 @@ export const translations =
   "title.object_builder" : "Constructor d'objecte",
   "title.select_by_property" : "Selecció per propietats",
   "title.select_by_qrcode" : "Selecció per codi QR",
+  "title.wms_import" : "Introdueix l'URL del servei WMS",
   "title.export_selection" : "Exporta selecció",
   "title.login" : "Identificació",
   "title.new_material" : "Nou material",
