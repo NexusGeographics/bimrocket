@@ -98,7 +98,7 @@ class GMLLoader extends GISLoader
     const version = detectGMLVersion(xml2);
     let gmlFormat;
 
-    if (version && version.startsWith("3.1")) {
+    if (version && (version.startsWith("3.1") || version.startsWith("3.0"))) {
       gmlFormat = new GML3(gmlOptions);
     } else {
       gmlFormat = new GML32(gmlOptions);
