@@ -11,6 +11,7 @@ import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
 import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
+import GML3 from 'ol/format/GML3.js';
 import GML32 from 'ol/format/GML32.js';
 import * as proj4Module from 'proj4';
 import { register } from "ol/proj/proj4.js";
