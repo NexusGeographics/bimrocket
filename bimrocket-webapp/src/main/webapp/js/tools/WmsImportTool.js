@@ -3,8 +3,7 @@ import { Dialog } from "../ui/Dialog.js";
 import { WMSLoader } from "../io/gis/WMSLoader.js";
 import * as THREE from "three";
 
-class WmsImportTool extends Tool
-{
+class WmsImportTool extends Tool {
     constructor(application) {
         super(application);
         this.name = "wms_import";
@@ -52,32 +51,41 @@ class WmsImportTool extends Tool
             return;
         }
 
+        const projectOrigin = this.application.project?.origin || new THREE.Vector3();
+
         const loaderOptions = {
-            targetCRS: 'EPSG:25831'
-            // L'origen el gestionarem després de carregar, no aquí
+            targetCRS: 'EPSG:25831',
+            origin: projectOrigin
         };
         const wmsLoader = new WMSLoader();
         wmsLoader.setOptions(loaderOptions);
 
         wmsLoader.load(
             url,
-            (wmsPlane) => {
+            (wmsData) => {
+                const { mesh: wmsPlane, params: wmsParams, originalBbox, transformedBbox } = wmsData;
 
-                const DESIRED_WIDTH = 100;
+                const wmsLayer = new THREE.Group();
+                const layerName = wmsParams.LAYERS || `WMS ${url.substring(0, 30)}...`;
+                wmsLayer.name = layerName;
 
-                const realWidth = wmsPlane.geometry.parameters.width;
+                wmsLayer.add(wmsPlane);
+                
+                wmsLayer.userData.WMS = {
+                    url: url,
+                    layers: wmsParams.LAYERS,
+                    format: wmsParams.FORMAT,
+                    crs: wmsParams.CRS || wmsParams.SRS,
+                    originalBbox: originalBbox,
+                    transformedBbox: transformedBbox
+                };
+                
+                this.application.addObject(wmsLayer);
 
-                const scaleFactor = DESIRED_WIDTH / realWidth;
-                wmsPlane.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                wmsPlane.position.set(0, 0, 0);
+                this.application.zoomTo(wmsLayer);
 
-                wmsPlane.name = `WMS Layer: ${url.substring(0, 30)}...`;
-                this.application.scene.add(wmsPlane);
-
-                console.log("Objecte WMS carregat i normalitzat a l'escena.");
-                console.log("Posició final:", wmsPlane.position);
-                console.log("Escala final:", wmsPlane.scale);
-                console.log(`Amplada final a l'escena: ${realWidth * scaleFactor}`);
+                console.log("Capa WMS creada i afegida al projecte.");
+                console.log("Objecte afegit:", wmsLayer);
                 
                 this.closeDialog();
             },
