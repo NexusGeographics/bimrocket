@@ -6,6 +6,7 @@
 
 import { GISLoader } from "./GISLoader.js";
 import * as THREE from "three";
+import GML3 from 'ol/format/GML3.js';
 import GML32 from 'ol/format/GML32.js';
 import * as proj4Module from 'proj4';
 import { register } from "ol/proj/proj4.js";
@@ -58,11 +59,25 @@ function getGMLOptions(xmlString) {
   return options;
 }
 
+function detectGMLVersion(xmlString) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+  const rootElement = xmlDoc.documentElement;
+  if (rootElement && rootElement.hasAttribute("version")) {
+    return rootElement.getAttribute("version");
+  }
+  const featureCollection = xmlDoc.querySelector("FeatureCollection, *|FeatureCollection");
+  if (featureCollection && featureCollection.hasAttribute("version")) {
+     return featureCollection.getAttribute("version");
+  }
+  return null;
+}
+
 class GMLLoader extends GISLoader
 {
   constructor(manager)
   {
-    super(manager, "text/xml; subtype=gml/3.1.1");
+    super(manager, "text/xml; subtype=gml/3.1.1", "application/gml+xml");
     proj4Module.default.defs(
         'EPSG:25831',
         '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs'
@@ -86,12 +101,20 @@ class GMLLoader extends GISLoader
       return null;
     }
 
+    const version = detectGMLVersion(xml2);
+    let gmlFormat;
+
+    if (version && version.startsWith("3.1")) {
+      gmlFormat = new GML3(gmlOptions);
+    } else {
+      gmlFormat = new GML32(gmlOptions);
+    }
+
     let features;
     try {
-      const gmlFormat = new GML32(gmlOptions);
       features = gmlFormat.readFeatures(xmlDoc);
     } catch (err) {
-      console.error("Error parsing with GML32:", err);
+      console.error(`Error parsing with ${gmlFormat.constructor.name}:`, err);
       this.manager.itemError(this.options.url);
       return null;
     }
