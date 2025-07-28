@@ -47,7 +47,7 @@ class WmsImportTool extends Tool {
         const url = this.urlInput.value;
 
         if (!url || url.trim() === '') {
-            alert("Si us plau, introdueix una URL vàlida.");
+            alert("Enter a valid URL");
             return;
         }
 
@@ -64,13 +64,11 @@ class WmsImportTool extends Tool {
             url,
             (wmsData) => {
                 const { mesh: wmsPlane, params: wmsParams, originalBbox, transformedBbox } = wmsData;
-
                 const wmsLayer = new THREE.Group();
                 const layerName = wmsParams.LAYERS || `WMS ${url.substring(0, 30)}...`;
-                wmsLayer.name = layerName;
 
+                wmsLayer.name = layerName;
                 wmsLayer.add(wmsPlane);
-                
                 wmsLayer.userData.WMS = {
                     url: url,
                     layers: wmsParams.LAYERS,
@@ -79,22 +77,17 @@ class WmsImportTool extends Tool {
                     originalBbox: originalBbox,
                     transformedBbox: transformedBbox
                 };
-                
+
                 this.application.addObject(wmsLayer);
-
                 this.application.zoomTo(wmsLayer);
-
-                console.log("Capa WMS creada i afegida al projecte.");
-                console.log("Objecte afegit:", wmsLayer);
-                
                 this.closeDialog();
             },
             (xhr) => {
-                console.log((xhr.loaded / xhr.total * 100) + '% carregat');
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
             },
             (error) => {
-                console.error("S'ha produït un error en carregar la imatge WMS:", error);
-                alert("Error en carregar la imatge WMS. Comprova la URL i la consola per a més detalls.");
+                console.error("An error occurred while loading the WMS image:", error);
+                alert("Error loading WMS image. Check the URL and console for details.");
             }
         );
     }
