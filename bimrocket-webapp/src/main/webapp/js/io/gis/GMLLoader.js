@@ -1,9 +1,3 @@
-/**
- * GMLLoader.js
- *
- * @author realor
- */
-
 import { GISLoader } from "./GISLoader.js";
 import * as THREE from "three";
 import GML3 from 'ol/format/GML3.js';
