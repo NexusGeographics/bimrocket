@@ -37,20 +37,21 @@ class WMSLoader extends THREE.Loader {
 
         const sourceCRS = wmsParams.SRS || wmsParams.CRS;
         const targetCRS = options.targetCRS;
+        let transformedBbox = [...bbox]; // Copiem el bbox original
 
         if (targetCRS && sourceCRS && sourceCRS.toUpperCase() !== targetCRS.toUpperCase()) {
             try {
                 const transformer = proj4(sourceCRS, targetCRS);
                 const minCoords = transformer.forward([bbox[0], bbox[1]]);
                 const maxCoords = transformer.forward([bbox[2], bbox[3]]);
-                bbox = [minCoords[0], minCoords[1], maxCoords[0], maxCoords[1]];
+                transformedBbox = [minCoords[0], minCoords[1], maxCoords[0], maxCoords[1]];
             } catch(e) {
                 console.error(`Error transformant coordenades: ${e}.`);
             }
         }
         
-        const planeWidth = bbox[2] - bbox[0];
-        const planeHeight = bbox[3] - bbox[1];
+        const planeWidth = transformedBbox[2] - transformedBbox[0];
+        const planeHeight = transformedBbox[3] - transformedBbox[1];
 
         const material = new THREE.MeshBasicMaterial({
           map: texture,
@@ -61,19 +62,24 @@ class WMSLoader extends THREE.Loader {
         const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
         const wmsPlane = new THREE.Mesh(geometry, material);
 
-        const centerX = (bbox[0] + bbox[2]) / 2;
-        const centerZ = (bbox[1] + bbox[3]) / 2;
-        wmsPlane.position.set(centerX, 0, centerZ); // La Y del món és 0 (el terra)
+        const centerX = (transformedBbox[0] + transformedBbox[2]) / 2;
+        const centerZ = (transformedBbox[1] + transformedBbox[3]) / 2; // Canviem Y per Z
+        wmsPlane.position.set(centerX, 0, centerZ);
 
         if (options.origin) {
           wmsPlane.position.sub(options.origin);
         }
         
-        // Rotem el pla per deixar-lo pla sobre el "terra" (el pla XZ)
         wmsPlane.rotateX(-Math.PI / 2);
+        wmsPlane.name = "WMS Image";
 
         if (onLoad) {
-          onLoad(wmsPlane);
+          onLoad({
+              mesh: wmsPlane,
+              params: wmsParams,
+              originalBbox: bbox,
+              transformedBbox: transformedBbox
+          });
         }
       },
       onProgress,
