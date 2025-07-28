@@ -24,20 +24,20 @@ class WMSLoader extends THREE.Loader {
 
     textureLoader.load(url,
       (texture) => {
-        const wmsParams = this._getWMSParams(url);
+        const wmsParams = this.getWMSParams(url);
         
         let bbox;
         if (wmsParams.BBOX) {
             bbox = wmsParams.BBOX.split(',').map(Number);
         } else {
-            console.error("La URL del WMS no conté un paràmetre BBOX.");
-            if (onError) onError(new Error("URL sense BBOX"));
+            console.error("The WMS URL does not contain a BBOX.");
+            if (onError) onError(new Error("URL without BBOX"));
             return;
         }
 
         const sourceCRS = wmsParams.SRS || wmsParams.CRS;
         const targetCRS = options.targetCRS;
-        let transformedBbox = [...bbox]; // Copiem el bbox original
+        let transformedBbox = [...bbox];
 
         if (targetCRS && sourceCRS && sourceCRS.toUpperCase() !== targetCRS.toUpperCase()) {
             try {
@@ -46,7 +46,7 @@ class WMSLoader extends THREE.Loader {
                 const maxCoords = transformer.forward([bbox[2], bbox[3]]);
                 transformedBbox = [minCoords[0], minCoords[1], maxCoords[0], maxCoords[1]];
             } catch(e) {
-                console.error(`Error transformant coordenades: ${e}.`);
+                console.error(`Error transforming coordinates: ${e}.`);
             }
         }
         
@@ -63,7 +63,7 @@ class WMSLoader extends THREE.Loader {
         const wmsPlane = new THREE.Mesh(geometry, material);
 
         const centerX = (transformedBbox[0] + transformedBbox[2]) / 2;
-        const centerZ = (transformedBbox[1] + transformedBbox[3]) / 2; // Canviem Y per Z
+        const centerZ = (transformedBbox[1] + transformedBbox[3]) / 2;
         wmsPlane.position.set(centerX, 0, centerZ);
 
         if (options.origin) {
@@ -86,13 +86,8 @@ class WMSLoader extends THREE.Loader {
       onError
     );
   }
-
-  parse(data) {
-    console.warn("WMSLoader.parse() no és aplicable. La lògica està dins de load().");
-    return null;
-  }
   
-  _getWMSParams(urlString) {
+  getWMSParams(urlString) {
     const params = {};
     try {
       const search = urlString.substring(urlString.indexOf('?') + 1);
@@ -103,7 +98,7 @@ class WMSLoader extends THREE.Loader {
         }
       });
     } catch (e) {
-      console.error("Error parsejant els paràmetres de la URL del WMS:", e);
+      console.error("Error parsing WMS URL parameters:", e);
     }
     return params;
   }
