@@ -212,6 +212,45 @@ class WmsImportTool extends Tool
               .setI18N(this.application.i18n).show();
         }
     }
+    
+    performInitialZoom(bboxString, projectOrigin) {
+        try {
+            const bbox = bboxString.split(',').map(Number);
+            const width = bbox[2] - bbox[0];
+            const height = bbox[3] - bbox[1];
+            const centerX = (bbox[0] + bbox[2]) / 2;
+            const centerZ = (bbox[1] + bbox[3]) / 2;
+
+            const helperGeometry = new THREE.BoxGeometry(width, 0.1, height);
+            const helperMaterial = new THREE.MeshBasicMaterial({ visible: false });
+            const zoomHelper = new THREE.Mesh(helperGeometry, helperMaterial);
+            zoomHelper.position.set(centerX, 0, centerZ).sub(projectOrigin);
+            
+            this.application.scene.add(zoomHelper);
+            this.application.selection.clear();
+            this.application.selection.add(zoomHelper);
+            
+            const zoomTool = new ZoomAllTool(this.application);
+            zoomTool.execute();
+            
+            this.application.scene.remove(zoomHelper);
+            helperGeometry.dispose();
+            helperMaterial.dispose();
+        } catch (e) {
+            console.error("No s'ha pogut executar el zoom automàtic.", e);
+        }
+    }
+
+    cleanup() {
+        if (this.updateListener) {
+            this.application.removeEventListener("animation", this.updateListener);
+            this.updateListener = null;
+        }
+        if (this.wmsLayer) {
+            this.application.removeObject(this.wmsLayer);
+            this.wmsLayer = null;
+        }
+    }
 
     closeDialog()
     {
