@@ -1,138 +1,225 @@
 import * as THREE from "three";
-class WMSLoader extends THREE.Loader {
-  constructor(manager) {
-    super(manager);
-    this.options = {};
-    this.textureLoader = new THREE.TextureLoader(this.manager);
-    this.textureLoader.setCrossOrigin(this.crossOrigin || 'anonymous');
-  }
 
-  setOptions(options) {
-    this.options = { ...this.options, ...options };
-    return this;
-  }
+/**
+ * Encara no funciona aquesta part...
+ */
+function getVisibleWorldBounds(camera, projectOrigin) {
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const raycaster = new THREE.Raycaster();
+    
+    // Les 4 cantonades de la pantalla en coordenades normalitzades.
+    const ndcCorners = [new THREE.Vector2(-1, 1), new THREE.Vector2(1, 1), new THREE.Vector2(1, -1), new THREE.Vector2(-1, -1)];
+    const worldIntersectionPoints = [];
 
-  load(url, onLoad, onProgress, onError) {
-    const wmsParams = this.getWMSParams(url);
-    const wmsLayer = new THREE.Group();
-    wmsLayer.name = wmsParams.LAYERS || `WMS Layer`;
-    wmsLayer.userData.WMS = {
-        baseUrl: url.split('?')[0],
-        baseParams: wmsParams,
-        loadedTiles: new Map(),
-        tileSize: this.options.tileSize || 500,
-        targetCRS: this.options.targetCRS,
-        viewDistance: this.options.viewDistance || 1
-    };
-    wmsLayer.update = (camera, projectOrigin) => this.updateTiles(wmsLayer, camera, projectOrigin);
-
-    if (onLoad) onLoad({ layer: wmsLayer });
-  }
-
-  updateTiles(layer, camera, projectOrigin) {
-    const { tileSize, viewDistance } = layer.userData.WMS;
-    const cameraWorldPos = new THREE.Vector3().copy(camera.position).add(projectOrigin);
-    const centerTileX = Math.floor(cameraWorldPos.x / tileSize);
-    const centerTileZ = Math.floor(cameraWorldPos.z / tileSize);
-
-    for (let dx = -viewDistance; dx <= viewDistance; dx++) {
-        for (let dz = -viewDistance; dz <= viewDistance; dz++) {
-            const tileX = centerTileX + dx;
-            const tileZ = centerTileZ + dz;
-            this.loadSingleTile(layer, tileX, tileZ, projectOrigin);
+    // Llença un raig des de cada cantonada per veure on toca a terra.
+    for (const corner of ndcCorners) {
+        raycaster.setFromCamera(corner, camera);
+        const intersectPoint = new THREE.Vector3();
+        if (raycaster.ray.intersectPlane(groundPlane, intersectPoint)) {
+            // Afegeix el punt d'intersecció, corregit amb l'origen del projecte.
+            worldIntersectionPoints.push(intersectPoint.clone().add(projectOrigin));
         }
     }
-  }
 
-  loadSingleTile(layer, tileX, tileZ, projectOrigin) {
-    const { loadedTiles, tileSize } = layer.userData.WMS;
-    const tileKey = `tile_${tileX}_${tileZ}`;
-
-    if (loadedTiles.has(tileKey)) return;
-
-    loadedTiles.set(tileKey, { status: 'loading' });
-
-    const minX = tileX * tileSize;
-    const minZ = tileZ * tileSize;
-    const maxX = (tileX + 1) * tileSize;
-    const maxZ = (tileZ + 1) * tileSize;
+    // Si no tenim 4 punts, alguna cosa ha anat malament (ex: càmera mirant al cel).
+    if (worldIntersectionPoints.length < 4) { return null; }
     
-    const tileBbox = [minX, minZ, maxX, maxZ];
-    const tileUrl = this.createTileUrl(layer.userData.WMS, tileBbox);
+    // Crea la caixa que engloba els punts. Això és la nostra BBOX visible.
+    return new THREE.Box3().setFromPoints(worldIntersectionPoints);
+}
 
-    this.textureLoader.load(tileUrl,
-        (texture) => {
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                side: THREE.DoubleSide
-            });
-            const geometry = new THREE.PlaneGeometry(tileSize, tileSize);
-            const tileMesh = new THREE.Mesh(geometry, material);
-            
-            const centerX = (minX + maxX) / 2;
-            const centerZ = (minZ + maxZ) / 2;
-            
-            tileMesh.position.set(centerX, 0, centerZ).sub(projectOrigin);
-            
-            tileMesh.rotateX(-Math.PI / 2);
-            tileMesh.name = tileKey;
 
-            layer.add(tileMesh);
-            loadedTiles.set(tileKey, { status: 'loaded', mesh: tileMesh });
-            console.log(`Rajola ${tileKey} (BBOX: ${tileBbox.join(',')}) carregada i afegida a '${layer.name}'.`);
-        },
-        undefined,
-        (error) => {
-            console.error(`Error carregant la rajola ${tileKey} desde ${tileUrl}`, error);
-            loadedTiles.delete(tileKey);
+/**
+ * Carregador personalitzat per a capes WMS. S'encarrega de demanar les imatges
+ * al servidor i actualitzar-les a l'escena segons la vista de la càmera.
+ */
+class WMSLoader extends THREE.Loader {
+    constructor(manager) {
+        super(manager);
+        this.options = {};
+        // El TextureLoader de Three.js carrega les imatges.
+        this.textureLoader = new THREE.TextureLoader(this.manager);
+        this.textureLoader.setCrossOrigin(this.crossOrigin || 'anonymous');
+    }
+
+    /**
+     * Permet configurar opcions del loader des de fora.
+     */
+    setOptions(options) {
+        this.options = { ...this.options, ...options };
+        return this;
+    }
+
+    /**
+     * Prepara la capa WMS, però no carrega la primera imatge encara.
+     * Crea un objecte contenidor (Group) i li assigna la configuració i
+     * la funció d'actualització.
+     */
+    load(url, onLoad, onProgress, onError) {
+        const wmsLayer = new THREE.Group();
+        wmsLayer.name = "Dynamic WMS Layer";
+
+        // `userData` és el nostre magatzem de configuració i estat per aquesta capa.
+        wmsLayer.userData.WMS = {
+            baseUrl: url.split('?')[0],
+            baseParams: this.getWMSParams(url),
+            origin: this.options.origin,
+            targetCRS: this.options.targetCRS,
+            pixelsPerMeter: this.options.pixelsPerMeter || 10,
+            updateThreshold: this.options.updateThreshold || 0.5, // % de moviment per refrescar
+            zoomInThreshold: this.options.zoomInThreshold || 0.6, // llindar de zoom per refrescar
+            zoomOutThreshold: this.options.zoomOutThreshold || 1.8,
+            isLoading: false,
+            currentMesh: null,
+            lastLoadedBbox: null,
+            boundaryBbox: this.getWMSParams(url).BBOX.split(',').map(Number) // BBOX màxima
+        };
+
+        // Assigna la funció `updateImage` a la capa, que serà cridada des de fora per refrescar-la.
+        wmsLayer.update = (camera, projectOrigin) => this.updateImage(wmsLayer, camera, projectOrigin);
+        if (onLoad) onLoad({ layer: wmsLayer });
+    }
+
+    /**
+     * El cor del loader. Decideix si cal actualitzar la imatge, la demana i la canvia a l'escena.
+     */
+    updateImage(layer, camera, projectOrigin) {
+        const wms = layer.userData.WMS;
+        // Evita fer peticions noves si ja n'hi ha una en curs.
+        if (wms.isLoading) return;
+
+        const visibleBounds = getVisibleWorldBounds(camera, projectOrigin);
+        if (!visibleBounds) return;
+
+        const targetBbox = [visibleBounds.min.x, visibleBounds.min.z, visibleBounds.max.x, visibleBounds.max.z];
+        
+        // Comprova si l'usuari s'ha mogut o ha fet zoom prou com per justificar una nova petició.
+        if (wms.lastLoadedBbox) {
+            const lastW = wms.lastLoadedBbox[2] - wms.lastLoadedBbox[0];
+            const currentW = targetBbox[2] - targetBbox[0];
+            
+            const lastCenterX = (wms.lastLoadedBbox[0] + wms.lastLoadedBbox[2]) / 2;
+            const lastCenterZ = (wms.lastLoadedBbox[1] + wms.lastLoadedBbox[3]) / 2;
+            const currentCenterX = (targetBbox[0] + targetBbox[2]) / 2;
+            const currentCenterZ = (targetBbox[1] + targetBbox[3]) / 2;
+            
+            const panDist = Math.sqrt(Math.pow(currentCenterX - lastCenterX, 2) + Math.pow(currentCenterZ - lastCenterZ, 2));
+            const panThreshold = lastW * wms.updateThreshold;
+            const hasPannedEnough = panDist > panThreshold;
+
+            const sizeRatio = lastW > 0 ? currentW / lastW : 0;
+            const hasZoomedEnough = (sizeRatio < wms.zoomInThreshold) || (sizeRatio > wms.zoomOutThreshold);
+
+            // Si no s'ha mogut prou, no fem res.
+            if (!hasPannedEnough && !hasZoomedEnough) {
+                return;
+            }
         }
-    );
-  }
+        
+        // Bloqueja noves actualitzacions fins que aquesta acabi.
+        wms.isLoading = true;
 
-  createTileUrl(wmsData, bbox) {
-      const params = new URLSearchParams();
-      const baseParams = wmsData.baseParams;
+        // Retalla la BBOX demanada per no sortir dels límits originals del servei.
+        const finalBbox = [
+            Math.max(targetBbox[0], wms.boundaryBbox[0]), Math.max(targetBbox[1], wms.boundaryBbox[1]),
+            Math.min(targetBbox[2], wms.boundaryBbox[2]), Math.min(targetBbox[3], wms.boundaryBbox[3])
+        ];
+        
+        // Si la BBOX resultant no té àrea, cancel·lem.
+        if (finalBbox[0] >= finalBbox[2] || finalBbox[1] >= finalBbox[3]) {
+            wms.isLoading = false;
+            return;
+        }
 
-      for (const key in baseParams) {
-          const upperKey = key.toUpperCase();
-          if (upperKey !== 'BBOX' && upperKey !== 'WIDTH' && upperKey !== 'HEIGHT' && upperKey !== 'CRS' && upperKey !== 'SRS') {
-              params.set(key, baseParams[key]);
-          }
-      }
+        wms.lastLoadedBbox = finalBbox;
 
-      params.set('BBOX', bbox.join(','));
-      params.set('WIDTH', 256);
-      params.set('HEIGHT', 256);
-      
-      const wmsVersion = baseParams.VERSION || '1.1.1';
-      if (wmsVersion.startsWith('1.3')) {
-          params.set('CRS', wmsData.targetCRS);
-      } else {
-          params.set('SRS', wmsData.targetCRS);
-      }
-      
-      const format = (baseParams.FORMAT || 'image/png').toLowerCase();
-      if (format.includes('png') || format.includes('gif')) {
-          params.set('TRANSPARENT', 'true');
-      }
+        // Calcula les dimensions de la imatge en píxels a partir dels metres i la resolució.
+        const widthM = finalBbox[2] - finalBbox[0];
+        const heightM = finalBbox[3] - finalBbox[1];
+        let widthPx = Math.round(widthM * wms.pixelsPerMeter);
+        let heightPx = Math.round(heightM * wms.pixelsPerMeter);
+        // Limita la mida per no demanar imatges ni massa petites ni gegants.
+        widthPx = Math.min(Math.max(widthPx, 64), 2048);
+        heightPx = Math.min(Math.max(heightPx, 64), 2048);
 
-      return `${wmsData.baseUrl}?${params.toString()}`;
-  }
+        const imageUrl = this.createImageUrl(wms, finalBbox, widthPx, heightPx);
+        
+        // Càrrega asíncrona de la textura.
+        this.textureLoader.load(imageUrl, (texture) => {
+            // Important: elimina la geometria i el material de la capa antiga per alliberar memòria GPU.
+            if (wms.currentMesh) {
+                wms.currentMesh.geometry.dispose();
+                wms.currentMesh.material.map.dispose(); 
+                wms.currentMesh.material.dispose();
+                layer.remove(wms.currentMesh);
+            }
 
-  getWMSParams(urlString) {
-      const params = {};
-      try {
-          const url = new URL(urlString);
-          url.searchParams.forEach((value, key) => {
-              params[key] = value;
-          });
-      } catch (e) { console.error("Error parsing WMS URL params", e); }
-      for (const key in params) {
-          params[key.toUpperCase()] = params[key];
-      }
-      return params;
-  }
+            // Crea el nou pla amb la geometria i el material (la nova textura).
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const geometry = new THREE.PlaneGeometry(widthM, heightM);
+            const mesh = new THREE.Mesh(geometry, material);
+
+            const centerX = (finalBbox[0] + finalBbox[2]) / 2;
+            const centerZ = (finalBbox[1] + finalBbox[3]) / 2;
+            // El posiciona i el gira perquè quedi estirat a terra.
+            mesh.position.set(centerX, 0, centerZ).sub(projectOrigin);
+            mesh.rotateX(-Math.PI / 2);
+
+            layer.add(mesh);
+            wms.currentMesh = mesh;
+            wms.isLoading = false;
+        }, undefined, (error) => {
+            console.error("Error carregant la imatge WMS", error);
+            wms.isLoading = false;
+        });
+    }
+
+    /**
+     * Construeix la URL de la petició GetMap del WMS amb tots els paràmetres necessaris.
+     */
+    createImageUrl(wms, bbox, width, height) {
+        const params = new URLSearchParams();
+        // Aprofita els paràmetres originals de la URL, descartant els que calcularem nosaltres.
+        for (const key in wms.baseParams) {
+            const upperKey = key.toUpperCase();
+            if (!['BBOX', 'WIDTH', 'HEIGHT', 'CRS', 'SRS'].includes(upperKey)) {
+                params.set(key, wms.baseParams[key]);
+            }
+        }
+        params.set('BBOX', bbox.join(','));
+        params.set('WIDTH', width);
+        params.set('HEIGHT', height);
+
+        // Gestiona les diferències entre versions de WMS (CRS vs SRS).
+        const wmsVersion = wms.baseParams.VERSION || '1.1.1';
+        if (wmsVersion.startsWith('1.3')) params.set('CRS', wms.targetCRS);
+        else params.set('SRS', wms.targetCRS);
+        
+        // Si el format és PNG, demanem transparència.
+        const format = (wms.baseParams.FORMAT || 'image/png').toLowerCase();
+        if (format.includes('png') || format.includes('gif')) params.set('TRANSPARENT', 'true');
+        
+        return `${wms.baseUrl}?${params.toString()}`;
+    }
+
+    /**
+     * Funció d'utilitat per parsejar els paràmetres de la URL inicial.
+     * Inclou un fallback per si la URL no està ben formada.
+     */
+    getWMSParams(urlString) {
+        const params = {};
+        try {
+            const url = new URL(urlString);
+            url.searchParams.forEach((value, key) => { params[key.toUpperCase()] = value; });
+        } catch (e) {
+            console.warn("URL podria no ser vàlida, intentant parsejar manualment.", e);
+            const search = urlString.substring(urlString.indexOf('?') + 1);
+            new URLSearchParams(search).forEach((value, key) => {
+                params[key.toUpperCase()] = value;
+            });
+        }
+        return params;
+    }
 }
 
 export { WMSLoader };
