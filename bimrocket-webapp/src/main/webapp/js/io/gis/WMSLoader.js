@@ -1,8 +1,6 @@
 import * as THREE from "three";
 
-/**
- * Encara no funciona aquesta part...
- */
+// No funciona!! (encara)
 function getVisibleWorldBounds(camera, projectOrigin) {
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const raycaster = new THREE.Raycaster();
@@ -91,8 +89,26 @@ class WMSLoader extends THREE.Loader {
         const visibleBounds = getVisibleWorldBounds(camera, projectOrigin);
         if (!visibleBounds) return;
 
-        const targetBbox = [visibleBounds.min.x, visibleBounds.min.z, visibleBounds.max.x, visibleBounds.max.z];
+        let targetBbox = [visibleBounds.min.x, visibleBounds.min.z, visibleBounds.max.x, visibleBounds.max.z];
         
+        // Si ja tenim una imatge carregada, ajustem la nova BBOX
+        // perquè el seu centre coincideixi amb el centre de l'antiga.
+        if (wms.lastLoadedBbox) {
+            const lastCenterX = (wms.lastLoadedBbox[0] + wms.lastLoadedBbox[2]) / 2;
+            const lastCenterZ = (wms.lastLoadedBbox[1] + wms.lastLoadedBbox[3]) / 2;
+
+            const newWidth = targetBbox[2] - targetBbox[0];
+            const newHeight = targetBbox[3] - targetBbox[1];
+
+            // Reconstruïm la BBOX objectiu al voltant del centre de l'última imatge.
+            targetBbox = [
+                lastCenterX - newWidth / 2,
+                lastCenterZ - newHeight / 2,
+                lastCenterX + newWidth / 2,
+                lastCenterZ + newHeight / 2,
+            ];
+        }
+
         // Comprova si l'usuari s'ha mogut o ha fet zoom prou com per justificar una nova petició.
         if (wms.lastLoadedBbox) {
             const lastW = wms.lastLoadedBbox[2] - wms.lastLoadedBbox[0];
@@ -149,8 +165,12 @@ class WMSLoader extends THREE.Loader {
             // Important: elimina la geometria i el material de la capa antiga per alliberar memòria GPU.
             if (wms.currentMesh) {
                 wms.currentMesh.geometry.dispose();
-                wms.currentMesh.material.map.dispose(); 
-                wms.currentMesh.material.dispose();
+                if (wms.currentMesh.material && wms.currentMesh.material.map) {
+                    wms.currentMesh.material.map.dispose(); 
+                }
+                if (wms.currentMesh.material) {
+                    wms.currentMesh.material.dispose();
+                }
                 layer.remove(wms.currentMesh);
             }
 
