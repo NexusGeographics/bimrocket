@@ -85,6 +85,7 @@ services:
       - https://api.openai.com/
       - https://api.bsdd.buildingsmart.org/
       - https://gis.santfeliu.cat/geoserver/wfs
+      - https://gis.santfeliu.cat/geoserver/ 
       - https://gis.santfeliu.cat/
     aliases:
       chatgpt:
