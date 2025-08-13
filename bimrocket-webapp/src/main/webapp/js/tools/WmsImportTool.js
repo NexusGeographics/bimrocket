@@ -239,5 +239,4 @@ class WmsImportTool extends Tool
         this.dialog.hide();
     }
 }
-
 export { WmsImportTool };
