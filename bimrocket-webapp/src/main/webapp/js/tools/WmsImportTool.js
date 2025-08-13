@@ -1,14 +1,16 @@
 import { Tool } from "./Tool.js";
 import { Dialog } from "../ui/Dialog.js";
 import { WMSLoader } from "../io/gis/WMSLoader.js";
+import { ObjectUtils } from "../utils/ObjectUtils.js"; // NOU: Necessitem zoomAll
 import * as THREE from "three";
-import { ZoomAllTool } from "./ZoomAllTool.js";
+import { MapView, MapProvider } from "geo-three";
+import proj4 from 'proj4';
 
-/**
- * Eina per importar i gestionar una capa WMS dinàmica a l'escena.
- * Mostra un diàleg per introduir una URL i s'encarrega d'afegir,
- * actualitzar i netejar la capa.
- */
+// ... (definicions de proj4 sense canvis)
+proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+proj4.defs("EPSG:3857", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
+proj4.defs("EPSG:25831", "+proj=utm +zone=31 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+
 class WmsImportTool extends Tool {
     constructor(application) {
         super(application);
@@ -17,175 +19,135 @@ class WmsImportTool extends Tool {
         this.help = "tool.wms_import.help";
         this.className = "wmsImport";
         this.immediate = true;
-
         this.dialog = this.createDialog();
-        this.wmsLayer = null;
-        this.updateListener = null;
-
-        // Limita les actualitzacions per no saturar el servidor WMS en moure la càmera.
-        this.throttleDelay = 500; 
-        this.lastUpdateTime = 0;
-        this.wheelListener = null; 
+        this.wmsLayerGroup = null; 
     }
+    execute() { this.dialog.show(); }
 
-    /**
-     * Punt d'entrada de l'eina. Neteja l'estat anterior i mostra el diàleg.
-     */
-    execute() {
-        this.cleanup();
-        this.dialog.show();
+    cleanup() {
+        if (this.wmsLayerGroup) {
+            console.log("Netejant la capa WMS anterior.");
+            const mapView = this.wmsLayerGroup.getObjectByProperty('isMapView', true);
+            if (mapView) {
+                mapView.dispose();
+            }
+            this.application.removeObject(this.wmsLayerGroup);
+            this.wmsLayerGroup = null;
+        }
     }
-
-    /**
-     * Construeix la finestra de diàleg per introduir la URL del WMS.
-     */
+    
     createDialog() {
         const dialog = new Dialog("title.wms_import");
-        dialog.setSize(400, 200);
+        dialog.setSize(400, 250);
         dialog.setI18N(this.application.i18n);
-        
-        const inputElem = document.createElement("input");
-        inputElem.type = "text";
-        inputElem.id = "wms_url_input";
-        inputElem.placeholder = "URL del servei WMS (amb BBOX gran)";
-        inputElem.style.width = "95%";
-        inputElem.style.padding = "8px";
-        this.urlInput = inputElem;
-        
-        dialog.bodyElem.appendChild(inputElem);
+        const urlInput = document.createElement("input");
+        urlInput.type = "text";
+        urlInput.value = "https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wms/service";
+        this.urlInput = urlInput;
+        const layersInput = document.createElement("input");
+        layersInput.type = "text";
+        layersInput.value = "topogris";
+        this.layersInput = layersInput;
+        const crsInput = document.createElement("input");
+        crsInput.type = "text";
+        crsInput.value = "EPSG:3857";
+        this.crsInput = crsInput;
+        [urlInput, layersInput, crsInput].forEach(input => {
+            input.style.width = "95%";
+            input.style.padding = "8px";
+            input.style.marginTop = "10px";
+            dialog.bodyElem.appendChild(input);
+        });
         dialog.addButton("import", "button.accept", () => this.importWmsUrl());
         dialog.addButton("close", "button.close", () => this.closeDialog());
         return dialog;
     }
-
-    /**
-     * Lògica principal: valida la URL, configura el loader i carrega la capa.
-     */
+    
     importWmsUrl() {
+        console.log("--- [DEBUG] Iniciant importació WMS ---");
+        this.cleanup();
+
         const url = this.urlInput.value;
-        if (!url || !url.toUpperCase().includes('BBOX=')) {
-            alert("Introdueix una URL vàlida que contingui el paràmetre BBOX.");
-            return;
-        }
-        
-        const wmsLoader = new WMSLoader();
+        const layers = this.layersInput.value;
+        const crs = this.crsInput.value;
 
-        // Determina l'origen del projecte. Si no n'hi ha, el calcula a partir del BBOX
-        // inicial per centrar la vista i evitar problemes amb coordenades grans.
-        let effectiveOrigin = this.application.project?.origin?.clone() || new THREE.Vector3(0, 0, 0);
+        if (!url || !layers || !crs) { return; }
 
-        if (effectiveOrigin.lengthSq() === 0) {
-            try {
-                const initialWmsParams = wmsLoader.getWMSParams(url);
-                const bbox = initialWmsParams.BBOX.split(',').map(Number);
-                effectiveOrigin.set((bbox[0] + bbox[2]) / 2, 0, (bbox[1] + bbox[3]) / 2);
-            } catch (e) { console.error("El BBOX de la URL inicial no és vàlid.", e); }
-        }
-        
-        // Opcions per al carregador: SRS, origen i paràmetres d'actualització.
-        wmsLoader.setOptions({
-            origin: effectiveOrigin,
-            targetCRS: 'EPSG:25831',
-            pixelsPerMeter: 10,
-            updateThreshold: 0.5,
-            viewSizeFactor: 1.5 
-        });
+        try {
+            const provider = new WMSLoader(url, layers, crs);
+            console.log("[DEBUG] WMSLoader (provider) creat.");
 
-        // La càrrega és asíncrona. El codi dins el callback s'executa quan la capa està preparada.
-        wmsLoader.load(url, (wmsData) => {
-            this.wmsLayer = wmsData.layer;
-            this.application.addObject(this.wmsLayer);
+            // *** Utilitzem el teu BBOX de Catalunya com a límit *** //
+            provider.bounds = [-1217.62, 4911850.33, 389940.33, 5321304.08];
+            console.log("[DEBUG] Límits del provider (EPSG:3857):", provider.bounds);
 
-            // Listener per refrescar la imatge WMS quan es mou la càmera.
-            this.updateListener = () => {
-                const now = Date.now();
-                if (now - this.lastUpdateTime > this.throttleDelay) {
-                    if (this.wmsLayer?.update) {
-                        this.wmsLayer.update(this.application.camera, effectiveOrigin);
-                    }
-                    this.lastUpdateTime = now; 
-                }
-            };
+            const mapView = new MapView(MapView.PLANAR, provider, this.application.camera);
+            // mapView.scale.set(0.001, 0.001, 0.001);
+
+            console.log("[DEBUG] MapView creat.");
             
-            this.application.addEventListener("animation", this.updateListener);
-            this.application.addEventListener("camera-change-end", this.updateListener);
+            this.wmsLayerGroup = new THREE.Group();
+            this.wmsLayerGroup.name = "WMS Layer - " + layers;
+            this.wmsLayerGroup.add(mapView);
 
-            // Listener de prova per la rodeta del ratolí.
-            this.wheelListener = (event) => {
-                console.log("S'ha fet zoom amb la rodeta!", event.deltaY > 0 ? "Zoom Out" : "Zoom In");
-            };
-            this.application.renderer.domElement.addEventListener('wheel', this.wheelListener);
+            // Calculem el centre del mapa i la seva mida
+            const mapWidth = provider.bounds[2] - provider.bounds[0];
+            const mapHeight = provider.bounds[3] - provider.bounds[1];
+            const centerX = (provider.bounds[0] + provider.bounds[2]) / 2;
+            const centerY = (provider.bounds[1] + provider.bounds[3]) / 2;
             
-            // Forcem una primera actualització i fem zoom a l'extensió.
-            this.wmsLayer.update(this.application.camera, effectiveOrigin);
-            this.performInitialZoomOnFirstLoad();
+            // Creem el centre de l'escena a partir del centre del mapa
+            const sceneCenter = new THREE.Vector3(centerX, 0, -centerY);
+
+            // Afegim el grup a l'escena. Important fer-ho abans de manipular la càmera.
+            this.application.addObject(this.wmsLayerGroup);
+
+            const cam = this.application.camera;
+            const orbitTool = this.application.tools["orbit"];
+
+            if (cam && orbitTool) {
+                // Calculem la distància necessària per enquadrar el mapa
+                const aspect = this.application.container.clientWidth / this.application.container.clientHeight;
+                const fovInRadians = THREE.MathUtils.degToRad(cam.fov);
+                const distanceForHeight = (mapHeight / 2) / Math.tan(fovInRadians / 2);
+                const distanceForWidth = (mapWidth / 2) / (Math.tan(fovInRadians / 2) * aspect);
+                const distance = Math.max(distanceForHeight, distanceForWidth) * 1.05; // Un 5% de marge
+
+                // La posició final de la càmera: al centre del mapa, però elevada en l'eix Y
+                cam.position.set(sceneCenter.x, distance, sceneCenter.z);
+
+                // Girem el grup del mapa i el posicionem.
+                // Això es fa ARA perquè la càmera ja sap on mirar.
+                this.wmsLayerGroup.position.copy(sceneCenter);
+                this.wmsLayerGroup.rotation.x = -Math.PI / 2;
+
+                // Sincronitzem l'eina d'òrbita amb el nou estat.
+                orbitTool.center.copy(sceneCenter); // El nou punt de mira
+                orbitTool.resetParameters(); // Forcem a recalcular theta, phi, radius, etc.
+
+                // Assegurem que la càmera miri al lloc correcte.
+                cam.lookAt(sceneCenter);
+
+                // Ajustem el pla de tall llunyà i actualitzem la projecció
+                cam.far = distance * 2 + mapHeight;
+                cam.updateProjectionMatrix();
+
+                console.log("[DEBUG] Càmera i OrbitTool ajustats. Nou centre:", orbitTool.center.clone(), "Nova posició càmera:", cam.position.clone());
+
+                // Notifiquem a l'aplicació que la càmera ha canviat
+                this.application.notifyObjectsChanged(cam, this);
+            }
 
             this.closeDialog();
-        }, null, (error) => console.error("Error en configurar la capa WMS:", error));
-    }
+            console.log("--- [DEBUG] Importació WMS finalitzada correctament. ---");
 
-    /**
-     * Fa un "Zoom a l'extensió" automàtic a la capa acabada de carregar.
-     * Utilitza un objecte 'helper' invisible per definir l'àrea del zoom.
-     */
-    performInitialZoomOnFirstLoad() {
-        const checkInterval = setInterval(() => {
-            // Espera a que el WMSLoader hagi carregat la primera imatge i tingui un BBOX.
-            if (this.wmsLayer?.userData.WMS.lastLoadedBbox) {
-                clearInterval(checkInterval);
-                const bbox = this.wmsLayer.userData.WMS.lastLoadedBbox;
-                const projectOrigin = this.wmsLayer.userData.WMS.origin;
-
-                try {
-                    // Crea una caixa invisible amb la mida i posició del BBOX.
-                    const zoomHelper = new THREE.Mesh(
-                        new THREE.BoxGeometry(bbox[2] - bbox[0], 0.1, bbox[3] - bbox[1]),
-                        new THREE.MeshBasicMaterial({ visible: false })
-                    );
-                    zoomHelper.position.set((bbox[0] + bbox[2]) / 2, 0, (bbox[1] + bbox[3]) / 2).sub(projectOrigin);
-                    
-                    // L'afegeix, el selecciona, fa zoom i l'esborra.
-                    this.application.scene.add(zoomHelper);
-                    this.application.selection.clear();
-                    this.application.selection.add(zoomHelper);
-                    new ZoomAllTool(this.application).execute();
-
-                    this.application.scene.remove(zoomHelper);
-                    zoomHelper.geometry.dispose();
-                    zoomHelper.material.dispose();
-                } catch (e) { console.error("No s'ha pogut executar el zoom inicial.", e); }
-            }
-        }, 100);
-    }
-    
-    /**
-     * Mètode de neteja. Elimina la capa i els listeners.
-     */
-    cleanup() {
-        if (this.updateListener) {
-            this.application.removeEventListener("animation", this.updateListener);
-            this.application.removeEventListener("camera-change-end", this.updateListener);
-            this.updateListener = null;
-        }
-
-        if (this.wheelListener) {
-            this.application.renderer.domElement.removeEventListener('wheel', this.wheelListener);
-            this.wheelListener = null;
-        }
-        
-        if (this.wmsLayer) {
-            this.application.removeObject(this.wmsLayer);
-            this.wmsLayer = null;
+        } catch (err) {
+            // ... (gestió d'errors)
         }
     }
-    
-    /**
-     * Tanca i reseteja el diàleg d'importació.
-     */
+
     closeDialog() {
-        if (this.urlInput) { this.urlInput.value = ""; }
         this.dialog.hide();
     }
 }
-
 export { WmsImportTool };
