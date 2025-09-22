@@ -28,7 +28,7 @@ export function load(application)
       loadMethod : 0
     }
   };
-  
+
   IOManager.formats["gml"] =
   {
     description : "GML (*.gml)",

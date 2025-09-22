@@ -1697,10 +1697,6 @@ class Application
     return changed;
   }
 
-  loadGmlLayer(options){
-    return loadGmlLayer(options);
-  }
-
   updateObjects(objectExpression, updateFunction, recursive = false)
   {
     let objects = this.findObjects(objectExpression);
@@ -2079,6 +2075,11 @@ class Application
       application.progressBar.visible = true;
       IOManager.load(intent); // async load
     }
+  }
+
+  loadGmlLayer(options)
+  {
+    return loadGmlLayer(options);
   }
 
   initTasks()
