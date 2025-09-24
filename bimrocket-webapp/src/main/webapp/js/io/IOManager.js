@@ -300,12 +300,28 @@ class IOManager
         loader.parse(data, path,
           result => loadCompleted(result.scene), onError);
       }
-      else // general case: BRFLoader, STLLoader, PCDLoader, OBJLoader...
+      else // general case: BRFLoader, STLLoader, PCDLoader, OBJLoader, GMLLoader...
       {
         let result = loader.parse(data);
-        console.info("result", result);
-        let object = this.createObject(result);
-        loadCompleted(object);
+
+        if (result instanceof Promise)
+        {
+          result.then(realResult =>
+          {
+            console.info("result", result);
+            let object = this.createObject(realResult);
+            loadCompleted(object);
+          }).catch(ex =>
+          {
+            if (onError) onError(ex);
+          });
+        }
+        else
+        {
+          console.info("result", result);
+          let object = this.createObject(result);
+          loadCompleted(object);
+        }
       }
     }
     catch (ex)
@@ -414,5 +430,3 @@ class IOManager
 window.IOManager = IOManager;
 
 export { IOManager };
-
-

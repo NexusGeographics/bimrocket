@@ -11,10 +11,57 @@ import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
 import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
-import GML3 from 'ol/format/GML3.js';
-import GML32 from 'ol/format/GML32.js';
-import { register } from 'ol/proj/proj4.js';
-import proj4 from 'proj4';
+
+let GML3, GML32, proj4, olProj4Register;
+let dependenciesPromise = null;
+
+async function ensureDependencies()
+{
+  if (dependenciesPromise)
+  {
+    return dependenciesPromise;
+  }
+
+  dependenciesPromise = new Promise(async (resolve, reject) =>
+  {
+    try
+    {
+      console.log("Loading GML dependencies (OpenLayers, proj4)...");
+      const [
+        GML3Module,
+        GML32Module,
+        olProj4Module,
+        proj4Module
+      ] = await Promise.all([
+        import('ol/format/GML3.js'),
+        import('ol/format/GML32.js'),
+        import('ol/proj/proj4.js'),
+        import('proj4')
+      ]);
+
+      GML3 = GML3Module.default;
+      GML32 = GML32Module.default;
+      proj4 = proj4Module.default;
+      olProj4Register = olProj4Module.register;
+
+      if (!proj4.defs['EPSG:25831'])
+      {
+        proj4.defs('EPSG:25831', '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs');
+      }
+      olProj4Register(proj4);
+
+      resolve();
+    }
+    catch (error)
+    {
+      console.error("Failed to load GML dependencies:", error);
+      dependenciesPromise = null;
+      reject(error);
+    }
+  });
+
+  return dependenciesPromise;
+}
 
 class GMLLoader extends GISLoader
 {
@@ -29,12 +76,6 @@ class GMLLoader extends GISLoader
     };
 
     this.origin = new THREE.Vector2(0, 0);
-
-    if (!proj4.defs['EPSG:25831'])
-    {
-      proj4.defs('EPSG:25831', '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs');
-    }
-    register(proj4);
   }
 
   setOptions(options)
@@ -49,14 +90,24 @@ class GMLLoader extends GISLoader
     return this;
   }
 
-  load(source, onLoad, onProgress, onError)
+  async load(source, onLoad, onProgress, onError)
   {
+    try
+    {
+      await ensureDependencies();
+    }
+    catch (err)
+    {
+      if (onError) onError(err);
+      return;
+    }
+
     const scope = this;
-    const onParseComplete = (gmlText) =>
+    const onParseComplete = async (gmlText) =>
     {
       try
       {
-        const result = scope.parse(gmlText);
+        const result = await scope.parse(gmlText);
         if (result)
         {
           if (onLoad) onLoad(result);
@@ -233,8 +284,10 @@ class GMLLoader extends GISLoader
     }
   }
 
-  parse(data)
+  async parse(data)
   {
+    await ensureDependencies();
+
     let xmlString = (typeof data === 'string') ? data : (new XMLSerializer()).serializeToString(data);
 
     if (!xmlString || xmlString.trim().length === 0)
