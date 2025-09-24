@@ -178,7 +178,7 @@ class WFSController extends Controller
   {
   }
 
-  getFeature()
+  async getFeature()
   {
     let url = this.url;
     if (url.trim().length === 0) return;
@@ -238,7 +238,15 @@ class WFSController extends Controller
     };
 
     console.info("Loading feature " + this.layer + "...");
-    loader.load(url, this._onLoad, this._onProgress, this._onError);
+    try
+    {
+      const group = await loader.loadAsync(url);
+      this.onLoad(group);
+    }
+    catch (error)
+    {
+      this.onError(error);
+    }
   }
 
   static getDescription()
