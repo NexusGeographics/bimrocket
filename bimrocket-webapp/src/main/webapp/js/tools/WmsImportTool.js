@@ -1,12 +1,11 @@
 import { Tool } from "./Tool.js";
 import { Dialog } from "../ui/Dialog.js";
 import { WMSLoader } from "../io/gis/WMSLoader.js";
-import { ObjectUtils } from "../utils/ObjectUtils.js"; // NOU: Necessitem zoomAll
+import { MessageDialog } from "../ui/MessageDialog.js";
 import * as THREE from "three";
-import { MapView, MapProvider } from "geo-three";
+import { MapView } from "geo-three";
 import proj4 from 'proj4';
 
-// ... (definicions de proj4 sense canvis)
 proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
 proj4.defs("EPSG:3857", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
 proj4.defs("EPSG:25831", "+proj=utm +zone=31 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -20,24 +19,22 @@ class WmsImportTool extends Tool {
         this.className = "wmsImport";
         this.immediate = true;
         this.dialog = this.createDialog();
-        this.wmsLayerGroup = null; 
+        this.wmsLayerGroup = null;
     }
+
     execute() { this.dialog.show(); }
 
     cleanup() {
         if (this.wmsLayerGroup) {
-            console.log("Netejant la capa WMS anterior.");
             const mapView = this.wmsLayerGroup.getObjectByProperty('isMapView', true);
-            if (mapView) {
-                mapView.dispose();
-            }
-            this.application.removeObject(this.wmsLayerGroup);
+            if (mapView) { mapView.dispose(); }
+            this.application.removeObject(this.wmsLayerGroup, null, true);
             this.wmsLayerGroup = null;
         }
     }
-    
+
     createDialog() {
-        const dialog = new Dialog("title.wms_import");
+        const dialog = new Dialog("Importar capa WMS");
         dialog.setSize(400, 250);
         dialog.setI18N(this.application.i18n);
         const urlInput = document.createElement("input");
@@ -53,16 +50,14 @@ class WmsImportTool extends Tool {
         crsInput.value = "EPSG:3857";
         this.crsInput = crsInput;
         [urlInput, layersInput, crsInput].forEach(input => {
-            input.style.width = "95%";
-            input.style.padding = "8px";
-            input.style.marginTop = "10px";
+            input.style.width = "95%"; input.style.padding = "8px"; input.style.marginTop = "10px";
             dialog.bodyElem.appendChild(input);
         });
         dialog.addButton("import", "button.accept", () => this.importWmsUrl());
         dialog.addButton("close", "button.close", () => this.closeDialog());
         return dialog;
     }
-    
+
     importWmsUrl() {
         console.log("--- [DEBUG] Iniciant importació WMS ---");
         this.cleanup();
@@ -71,78 +66,76 @@ class WmsImportTool extends Tool {
         const layers = this.layersInput.value;
         const crs = this.crsInput.value;
 
-        if (!url || !layers || !crs) { return; }
+        if (!url || !layers || !crs || crs.toUpperCase() !== "EPSG:3857") {
+            MessageDialog.create("ERROR", "URL, capa i CRS (EPSG:3857) són obligatoris.").show();
+            return;
+        }
 
         try {
+            const application = this.application;
+            const camera = application.camera;
+            const orbitTool = application.tools["orbit"];
+
+            //const sceneOriginUTM = [417918, 4580612]; //--> origen amb UTM 31N
+            // const sceneOriginUTM = [4554, 4936725]; //--> origen amb EPSG:3857 
+            // const sceneOriginMercator = proj4("EPSG:25831", "EPSG:3857", sceneOriginUTM);
+            // console.log(`[DEBUG] Origen de l'escena en UTM: ${sceneOriginUTM}`);
+            // console.log(`[DEBUG] Origen de l'escena en Mercator: ${sceneOriginMercator}`);
+
             const provider = new WMSLoader(url, layers, crs);
-            console.log("[DEBUG] WMSLoader (provider) creat.");
 
-            // *** Utilitzem el teu BBOX de Catalunya com a límit *** //
-            provider.bounds = [-1217.62, 4911850.33, 389940.33, 5321304.08];
-            console.log("[DEBUG] Límits del provider (EPSG:3857):", provider.bounds);
+            // camera.far = 20000000;
+            // camera.updateProjectionMatrix();
 
-            const mapView = new MapView(MapView.PLANAR, provider, this.application.camera);
-            // mapView.scale.set(0.001, 0.001, 0.001);
+            const mapView = new MapView(MapView.PLANAR, provider, camera);
+            mapView.name = "MapView";
 
-            console.log("[DEBUG] MapView creat.");
-            
             this.wmsLayerGroup = new THREE.Group();
             this.wmsLayerGroup.name = "WMS Layer - " + layers;
             this.wmsLayerGroup.add(mapView);
 
-            // Calculem el centre del mapa i la seva mida
-            const mapWidth = provider.bounds[2] - provider.bounds[0];
-            const mapHeight = provider.bounds[3] - provider.bounds[1];
-            const centerX = (provider.bounds[0] + provider.bounds[2]) / 2;
-            const centerY = (provider.bounds[1] + provider.bounds[3]) / 2;
-            
-            // Creem el centre de l'escena a partir del centre del mapa
-            const sceneCenter = new THREE.Vector3(centerX, 0, -centerY);
+            this.wmsLayerGroup.rotation.x = Math.PI/2;
+            this.wmsLayerGroup.rotation.y = 0;
 
-            // Afegim el grup a l'escena. Important fer-ho abans de manipular la càmera.
-            this.application.addObject(this.wmsLayerGroup);
+            /*this.wmsLayerGroup.position.set(
+                -sceneOriginMercator[0],
+                -sceneOriginMercator[1]
+                ,-0.1,
+            );*/
 
-            const cam = this.application.camera;
-            const orbitTool = this.application.tools["orbit"];
+            this.wmsLayerGroup.position.set(
+                250,
+                5660,
+                -0.1
+            );
+            this.wmsLayerGroup.updateMatrix();
+            this.wmsLayerGroup.updateMatrixWorld(true);
 
-            if (cam && orbitTool) {
-                // Calculem la distància necessària per enquadrar el mapa
-                const aspect = this.application.container.clientWidth / this.application.container.clientHeight;
-                const fovInRadians = THREE.MathUtils.degToRad(cam.fov);
-                const distanceForHeight = (mapHeight / 2) / Math.tan(fovInRadians / 2);
-                const distanceForWidth = (mapWidth / 2) / (Math.tan(fovInRadians / 2) * aspect);
-                const distance = Math.max(distanceForHeight, distanceForWidth) * 1.05; // Un 5% de marge
+            application.addObject(this.wmsLayerGroup, application.baseObject);
 
-                // La posició final de la càmera: al centre del mapa, però elevada en l'eix Y
-                cam.position.set(sceneCenter.x, distance, sceneCenter.z);
+            // if (orbitTool) {
 
-                // Girem el grup del mapa i el posicionem.
-                // Això es fa ARA perquè la càmera ja sap on mirar.
-                this.wmsLayerGroup.position.copy(sceneCenter);
-                this.wmsLayerGroup.rotation.x = -Math.PI / 2;
+            //     const sceneCenter = new THREE.Vector3(0, 0, 0);
+            //     const cameraDistance = 25;
 
-                // Sincronitzem l'eina d'òrbita amb el nou estat.
-                orbitTool.center.copy(sceneCenter); // El nou punt de mira
-                orbitTool.resetParameters(); // Forcem a recalcular theta, phi, radius, etc.
+            //     orbitTool.center.copy(sceneCenter);
+            //     orbitTool.radius = cameraDistance;
+            //     orbitTool.phi = Math.PI / 4;
+            //     orbitTool.theta = Math.PI / 4;
+            //     orbitTool.updateCamera = true;
 
-                // Assegurem que la càmera miri al lloc correcte.
-                cam.lookAt(sceneCenter);
+            //     console.log(`[DEBUG] Eina d'òrbita configurada: center=${orbitTool.center.toArray().join(',')}, radius=${orbitTool.radius}`);
+            // }
 
-                // Ajustem el pla de tall llunyà i actualitzem la projecció
-                cam.far = distance * 2 + mapHeight;
-                cam.updateProjectionMatrix();
-
-                console.log("[DEBUG] Càmera i OrbitTool ajustats. Nou centre:", orbitTool.center.clone(), "Nova posició càmera:", cam.position.clone());
-
-                // Notifiquem a l'aplicació que la càmera ha canviat
-                this.application.notifyObjectsChanged(cam, this);
-            }
-
+            application.notifyObjectsChanged(camera, this);
             this.closeDialog();
-            console.log("--- [DEBUG] Importació WMS finalitzada correctament. ---");
+            console.log("--- [DEBUG] Importació WMS finalitzada. ---");
 
         } catch (err) {
-            // ... (gestió d'errors)
+            console.error("Error durant la importació WMS:", err);
+            MessageDialog.create("ERROR", "Error durant la importació: " + err.message)
+              .setClassName("error")
+              .setI18N(this.application.i18n).show();
         }
     }
 
@@ -150,4 +143,5 @@ class WmsImportTool extends Tool {
         this.dialog.hide();
     }
 }
+
 export { WmsImportTool };
