@@ -37,22 +37,27 @@ class WmsImportTool extends Tool {
         const dialog = new Dialog("Importar capa WMS");
         dialog.setSize(400, 250);
         dialog.setI18N(this.application.i18n);
+
         const urlInput = document.createElement("input");
         urlInput.type = "text";
         urlInput.value = "https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wms/service";
         this.urlInput = urlInput;
+
         const layersInput = document.createElement("input");
         layersInput.type = "text";
         layersInput.value = "topogris";
         this.layersInput = layersInput;
+
         const crsInput = document.createElement("input");
         crsInput.type = "text";
         crsInput.value = "EPSG:3857";
         this.crsInput = crsInput;
+        
         [urlInput, layersInput, crsInput].forEach(input => {
             input.style.width = "95%"; input.style.padding = "8px"; input.style.marginTop = "10px";
             dialog.bodyElem.appendChild(input);
         });
+
         dialog.addButton("import", "button.accept", () => this.importWmsUrl());
         dialog.addButton("close", "button.close", () => this.closeDialog());
         return dialog;
@@ -74,20 +79,9 @@ class WmsImportTool extends Tool {
         try {
             const application = this.application;
             const camera = application.camera;
-            const orbitTool = application.tools["orbit"];
-
-            //const sceneOriginUTM = [417918, 4580612]; //--> origen amb UTM 31N
-            // const sceneOriginUTM = [4554, 4936725]; //--> origen amb EPSG:3857 
-            // const sceneOriginMercator = proj4("EPSG:25831", "EPSG:3857", sceneOriginUTM);
-            // console.log(`[DEBUG] Origen de l'escena en UTM: ${sceneOriginUTM}`);
-            // console.log(`[DEBUG] Origen de l'escena en Mercator: ${sceneOriginMercator}`);
-
             const provider = new WMSLoader(url, layers, crs);
-
-            // camera.far = 20000000;
-            // camera.updateProjectionMatrix();
-
             const mapView = new MapView(MapView.PLANAR, provider, camera);
+
             mapView.name = "MapView";
 
             this.wmsLayerGroup = new THREE.Group();
@@ -97,38 +91,20 @@ class WmsImportTool extends Tool {
             this.wmsLayerGroup.rotation.x = Math.PI/2;
             this.wmsLayerGroup.rotation.y = 0;
 
-            /*this.wmsLayerGroup.position.set(
-                -sceneOriginMercator[0],
-                -sceneOriginMercator[1]
-                ,-0.1,
-            );*/
-
             this.wmsLayerGroup.position.set(
                 250,
                 5660,
                 -0.1
             );
+
             this.wmsLayerGroup.updateMatrix();
             this.wmsLayerGroup.updateMatrixWorld(true);
 
             application.addObject(this.wmsLayerGroup, application.baseObject);
-
-            // if (orbitTool) {
-
-            //     const sceneCenter = new THREE.Vector3(0, 0, 0);
-            //     const cameraDistance = 25;
-
-            //     orbitTool.center.copy(sceneCenter);
-            //     orbitTool.radius = cameraDistance;
-            //     orbitTool.phi = Math.PI / 4;
-            //     orbitTool.theta = Math.PI / 4;
-            //     orbitTool.updateCamera = true;
-
-            //     console.log(`[DEBUG] Eina d'òrbita configurada: center=${orbitTool.center.toArray().join(',')}, radius=${orbitTool.radius}`);
-            // }
-
             application.notifyObjectsChanged(camera, this);
+
             this.closeDialog();
+
             console.log("--- [DEBUG] Importació WMS finalitzada. ---");
 
         } catch (err) {
