@@ -26,7 +26,6 @@ async function ensureDependencies()
   {
     try
     {
-      console.log("Loading GML dependencies (OpenLayers, proj4)...");
       const [
         GML3Module,
         GML32Module,
@@ -49,12 +48,11 @@ async function ensureDependencies()
         proj4.defs('EPSG:25831', '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs');
       }
       olProj4Register(proj4);
-
       resolve();
     }
     catch (error)
     {
-      console.error("Failed to load GML dependencies:", error);
+      console.error(error);
       dependenciesPromise = null;
       reject(error);
     }
@@ -68,13 +66,11 @@ class GMLLoader extends GISLoader
   constructor(manager)
   {
     super(manager, "application/gml+xml", "text/xml");
-
     this.options = {
       extrusionHeight: 1,
       targetProjection: 'EPSG:25831',
       name: 'layer'
     };
-
     this.origin = new THREE.Vector2(0, 0);
   }
 
@@ -114,13 +110,13 @@ class GMLLoader extends GISLoader
         }
         else
         {
-          const err = new Error("GML parsing failed or did not return an object.");
-          if (onError) onError(err);
+          const error = new Error("GML parsing failed or did not return an object.");
+          if (onError) onError(error);
         }
       }
-      catch (e)
+      catch (error)
       {
-        if (onError) onError(e);
+        if (onError) onError(error);
         scope.manager.itemError(source instanceof File ? source.name : source);
       }
     };
