@@ -120,9 +120,6 @@ export const translations =
   "tool.openlocal.label" : "Open from local disk",
   "tool.openlocal.help" : "Open from local disk",
 
-  "tool.wms_import.label" : "Enter the wms url",
-  "tool.wms_import.help" : "Enter the wms url",
-
   "tool.savelocal.label" : "Save to local disk",
   "tool.savelocal.help" : "Save to local disk",
 
@@ -585,7 +582,6 @@ export const translations =
   "title.object_builder" : "Object builder",
   "title.select_by_property" : "Selection by properties",
   "title.select_by_qrcode" : "Selection by QR code",
-  "title.wms_import" : "Enter de WMS service URL",
   "title.export_selection" : "Export selection",
   "title.login" : "Login",
   "title.new_material" : "New material",
