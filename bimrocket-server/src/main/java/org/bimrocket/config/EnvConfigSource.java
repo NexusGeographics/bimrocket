@@ -28,50 +28,64 @@
  * and
  * https://www.gnu.org/licenses/lgpl.txt
  */
-package org.bimrocket.service.file.store;
+package org.bimrocket.config;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import org.bimrocket.service.file.ACL;
-import org.bimrocket.service.file.FindOptions;
-import org.bimrocket.service.file.Lock;
-import org.bimrocket.service.file.Path;
-import org.bimrocket.service.file.Metadata;
+import java.util.Set;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 
 /**
  *
  * @author realor
  */
-public interface FileStore
+public class EnvConfigSource implements ConfigSource
 {
-  List<Metadata> find(Path path, FindOptions options);
+  public static final String PREFIX = "bimrocket_";
 
-  Metadata get(Path path);
+  private static final Map<String, String> configuration = new HashMap<>();
 
-  Metadata makeCollection(Path path);
+  static
+  {
+    Map<String, String> envMap = System.getenv();
+    for (Map.Entry<String, String> entry : envMap.entrySet())
+    {
+      String key = entry.getKey();
+      if (key.startsWith(PREFIX))
+      {
+        String normKey = key.substring(PREFIX.length()).replace("_", ".");
+        configuration.put(normKey, entry.getValue());
+      }
+    }
+  }
 
-  InputStream read(Path path) throws IOException;
+  @Override
+  public int getOrdinal()
+  {
+    return 400;
+  }
 
-  Metadata write(Path path, InputStream is, String contentType)
-    throws IOException;
+  @Override
+  public Map<String, String> getProperties()
+  {
+    return configuration;
+  }
 
-  void delete(Path path) throws IOException;
+  @Override
+  public Set<String> getPropertyNames()
+  {
+    return configuration.keySet();
+  }
 
-  Map<String, Object> getProperties(Path path, String ...names);
+  @Override
+  public String getValue(String propertyName)
+  {
+    return configuration.get(propertyName);
+  }
 
-  void setProperties(Path path, Map<String, Object> properties);
-
-  ACL getACL(Path path);
-
-  void setACL(Path path, ACL acl);
-
-  Lock getLock(Path path);
-
-  void setLock(Path path, Lock lock);
-
-  void move(Path sourcePath, Path destPath) throws IOException;
-
-  void copy(Path sourcePath, Path destPath) throws IOException;
+  @Override
+  public String getName()
+  {
+    return EnvConfigSource.class.getSimpleName();
+  }
 }
