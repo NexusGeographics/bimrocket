@@ -7,6 +7,7 @@
 import { NewSceneTool } from "../tools/NewSceneTool.js";
 import { CloudExplorerTool } from "../tools/CloudExplorerTool.js";
 import { OpenLocalTool } from "../tools/OpenLocalTool.js";
+/* wms import tool */
 import { WmsImportTool } from "../tools/WmsImportTool.js";
 import { MapboxTool } from "../tools/MapboxTool.js";
 import { SaveLocalTool } from "../tools/SaveLocalTool.js";
