@@ -22,6 +22,35 @@ class WmsImportTool extends Tool
         this.help = "tool.wms_import.help";
         this.className = "wmsImport";
         this.immediate = true;
+        
+        // Move wmsConfigs initialization before dialog creation
+        this.wmsConfigs = {
+            "icgc_topo": {
+                label: "ICGC - Topogràfic gris",
+                url: "https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wms/service",
+                layer: "topogris",
+                crs: "EPSG:3857"
+            },
+            "icgc_orto": {
+                label: "ICGC - Ortofoto",
+                url: "https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wms/service",
+                layer: "orto",
+                crs: "EPSG:3857"
+            },
+            "icgc_geologic": {
+                label: "ICGC - Divisions administratives 3857",
+                url: "https://geoserveis.icgc.cat/servei/catalunya/divisions-administratives/wms/service",
+                layer: "divisions_administratives_capsdemunicipi_capcomarca,divisions_administratives_capsdemunicipi_capmunicipi,divisions_administratives_municipis_5000,divisions_administratives_municipis_50000,divisions_administratives_municipis_100000,divisions_administratives_municipis_250000,divisions_administratives_comarques_5000,divisions_administratives_comarques_50000,divisions_administratives_comarques_100000,divisions_administratives_comarques_250000,divisions_administratives_comarques_500000,divisions_administratives_comarques_1000000",
+                crs: "EPSG:3857"
+            },
+            "icgc_geologic2": {
+                label: "ICGC - Divisions administratives 25831",
+                url: "https://geoserveis.icgc.cat/servei/catalunya/divisions-administratives/wms/service",
+                layer: "divisions_administratives_capsdemunicipi_capcomarca,divisions_administratives_capsdemunicipi_capmunicipi,divisions_administratives_municipis_5000,divisions_administratives_municipis_50000,divisions_administratives_municipis_100000,divisions_administratives_municipis_250000,divisions_administratives_comarques_5000,divisions_administratives_comarques_50000,divisions_administratives_comarques_100000,divisions_administratives_comarques_250000,divisions_administratives_comarques_500000,divisions_administratives_comarques_1000000",
+                crs: "EPSG:25831"
+            }
+        };
+        
         this.dialog = this.createDialog();
         this.wmsLayerGroup = null;
     }
@@ -45,41 +74,82 @@ class WmsImportTool extends Tool
     createDialog()
     {
         const dialog = new Dialog("Importar capa WMS");
-        dialog.setSize(400, 250);
+        dialog.setSize(400, 350);
         dialog.setI18N(this.application.i18n);
 
-        const urlInput = document.createElement("input");
-        urlInput.type = "text";
-        urlInput.value = "https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wms/service";
-        this.urlInput = urlInput;
+        const createLabeledInput = (labelText) => {
+            const container = document.createElement("div");
+            container.style.marginTop = "10px";
+            
+            const label = document.createElement("label");
+            label.textContent = labelText;
+            label.style.display = "block";
+            label.style.marginBottom = "5px";
+            
+            const input = document.createElement("input");
+            input.type = "text";
+            input.style.width = "95%";
+            input.style.padding = "8px";
+            //input.readOnly = true;
+            
+            container.appendChild(label);
+            container.appendChild(input);
+            return { container, input };
+        };
 
-        const layersInput = document.createElement("input");
-        layersInput.type = "text";
-        layersInput.value = "topogris";
-        this.layersInput = layersInput;
-
-        const crsInput = document.createElement("input");
-        crsInput.type = "text";
-        crsInput.value = "EPSG:3857";
-        this.crsInput = crsInput;
+        // Create select for WMS configurations
+        const selectContainer = document.createElement("div");
+        selectContainer.style.marginTop = "10px";
         
-        [urlInput, layersInput, crsInput].forEach
-        (
-            input =>
-            {
-                input.style.width = "95%"; input.style.padding = "8px"; input.style.marginTop = "10px";
-                dialog.bodyElem.appendChild(input);
-            }
-        );
+        const selectLabel = document.createElement("label");
+        selectLabel.textContent = "Selecciona configuració WMS:";
+        selectLabel.style.display = "block";
+        selectLabel.style.marginBottom = "5px";
+        
+        const configSelect = document.createElement("select");
+        configSelect.style.width = "95%";
+        configSelect.style.padding = "8px";
 
-        dialog.addButton
-        (
-            "import", "button.accept", () => this.importWmsUrl()
-        );
-        dialog.addButton
-        (
-            "close", "button.close", () => this.closeDialog()
-        );
+        selectContainer.appendChild(selectLabel);
+        selectContainer.appendChild(configSelect);
+        dialog.bodyElem.appendChild(selectContainer);
+
+        // Create labeled inputs
+        const { container: urlContainer, input: urlInput } = createLabeledInput("URL:");
+        const { container: layersContainer, input: layersInput } = createLabeledInput("Capa:");
+        const { container: crsContainer, input: crsInput } = createLabeledInput("CRS:");
+
+        this.urlInput = urlInput;
+        this.layersInput = layersInput;
+        this.crsInput = crsInput;
+
+        // Add options to select
+        Object.entries(this.wmsConfigs).forEach(([key, config]) => {
+            const option = document.createElement("option");
+            option.value = key;
+            option.text = config.label;
+            configSelect.appendChild(option);
+        });
+
+        // Add change event listener
+        configSelect.addEventListener("change", () => {
+            const config = this.wmsConfigs[configSelect.value];
+            urlInput.value = config.url;
+            layersInput.value = config.layer;
+            crsInput.value = config.crs;
+        });
+
+        // Add all elements to dialog
+        dialog.bodyElem.appendChild(urlContainer);
+        dialog.bodyElem.appendChild(layersContainer);
+        dialog.bodyElem.appendChild(crsContainer);
+
+        // Trigger initial load
+        configSelect.dispatchEvent(new Event("change"));
+
+        dialog.addButton("import", "button.accept", () => this.importWmsUrl());
+        dialog.addButton("close", "button.close", () => this.closeDialog());
+        
         return dialog;
     }
 
@@ -92,33 +162,36 @@ class WmsImportTool extends Tool
         const layers = this.layersInput.value;
         const crs = this.crsInput.value;
 
-        if (!url || !layers || !crs || crs.toUpperCase() !== "EPSG:3857")
+        if (!url || !layers || !crs)
         {
-            MessageDialog.create("ERROR", "URL, capa i CRS (EPSG:3857) són obligatoris.").show();
+            MessageDialog.create("ERROR", "URL, capa i CRS són obligatoris.").show();
             return;
         }
 
         try
         {
+            console.log("application: ", this.application);
+            console.log("camera: ", this.application.camera);
             const application = this.application;
             const camera = application.camera;
             const provider = new WMSLoader(url, layers, crs);
-            const mapView = new MapView(MapView.PLANAR, provider, camera);
-
-            mapView.name = "MapView";
+            const mapViewGeoT = new MapView(MapView.PLANAR, provider, camera);
+            console.log("mapViewGeoT: ", mapViewGeoT);
+            mapViewGeoT.name = "MapView";
 
             this.wmsLayerGroup = new THREE.Group();
             this.wmsLayerGroup.name = "WMS Layer - " + layers;
-            this.wmsLayerGroup.add(mapView);
+            this.wmsLayerGroup.add(mapViewGeoT);
 
             this.wmsLayerGroup.rotation.x = Math.PI/2;
             this.wmsLayerGroup.rotation.y = 0;
 
+            // TODO - Fer-ho dinàmic.
             this.wmsLayerGroup.position.set
             (
                 253,
                 5668,
-                -0.1
+                -1.5
             );
 
             this.wmsLayerGroup.updateMatrix();
