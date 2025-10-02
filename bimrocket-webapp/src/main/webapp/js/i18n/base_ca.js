@@ -120,6 +120,7 @@ export const translations =
   "tool.openlocal.label" : "Obre del disc local",
   "tool.openlocal.help" : "Obre del disc local",
 
+/* wms import tool */
   "tool.wms_import.label" : "Introduir l'url del wms",
   "tool.wms_import.help" : "Introdueix l'url del wms",
 
