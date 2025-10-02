@@ -64,7 +64,7 @@ export class WMSLoader extends MapProvider
     url.searchParams.set("BBOX", `${minx},${miny},${maxx},${maxy}`);
     url.searchParams.set("WIDTH", this.tileSize); url.searchParams.set("HEIGHT", this.tileSize);
     url.searchParams.set("FORMAT", this.format); url.searchParams.set("TRANSPARENT", String(this.transparent));
-    url.searchParams.set("BGCOLOR", "0000ff");
+    //url.searchParams.set("BGCOLOR", "0000ff");
 
     return new Promise((resolve, reject) => 
     {
