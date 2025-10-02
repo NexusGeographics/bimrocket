@@ -394,6 +394,7 @@
   background-image: url(images/tools/openlocal.svg);
 }
 
+/* wms tool button */
 .tool_button.wmsImport
 {
   background-image: url(images/tools/wms_import.svg);
