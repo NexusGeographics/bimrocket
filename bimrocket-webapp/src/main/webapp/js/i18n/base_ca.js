@@ -586,6 +586,7 @@ export const translations =
   "title.object_builder" : "Constructor d'objecte",
   "title.select_by_property" : "Selecció per propietats",
   "title.select_by_qrcode" : "Selecció per codi QR",
+  "title.wms_import" : "Introdueix l'URL del servei WMS",
   "title.export_selection" : "Exporta selecció",
   "title.login" : "Identificació",
   "title.new_material" : "Nou material",
