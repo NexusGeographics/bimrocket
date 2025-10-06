@@ -25,6 +25,12 @@ class WmsImportTool extends Tool
         
         // Move wmsConfigs initialization before dialog creation
         this.wmsConfigs = {
+            "icgc_orto_div_proxy": {
+                label: "ICGC - Divisions + Orto",
+                url: "https://geoserver.nexusgeografics.com/geoserver/bimrocket/wms",
+                layer: "icgc_orto_divisions",
+                crs: "EPSG:3857"
+            },
             "icgc_topo": {
                 label: "ICGC - Topogràfic gris",
                 url: "https://geoserveis.icgc.cat/icc_mapesmultibase/noutm/wms/service",
