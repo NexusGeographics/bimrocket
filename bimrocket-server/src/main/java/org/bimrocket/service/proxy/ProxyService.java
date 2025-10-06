@@ -123,6 +123,14 @@ public class ProxyService
   public void service(HttpServletRequest servletRequest,
     HttpServletResponse servletResponse) throws Exception
   {
+    // Handle preflight requests
+    if ("OPTIONS".equalsIgnoreCase(servletRequest.getMethod())) 
+    {
+      sendCORSHeaders(servletResponse);
+      servletResponse.setStatus(HttpServletResponse.SC_OK);
+      return;
+    }
+
     String url = servletRequest.getParameter("url");
     sendCORSHeaders(servletResponse);
 
@@ -310,7 +318,10 @@ public class ProxyService
   {
     servletResponse.setHeader("Access-Control-Allow-Origin", "*");
     servletResponse.setHeader("Access-Control-Allow-Credentials", "true");
-    servletResponse.setHeader("Access-Control-Allow-Headers", "*");
-    servletResponse.setHeader("Access-Control-Allow-Methods", "*");
+    servletResponse.setHeader("Access-Control-Allow-Headers",
+     "origin,content-type,accept,authorization,depth,if-modified-since,if-none-match");
+    servletResponse.setHeader("Access-Control-Allow-Methods",
+      "HEAD,GET,POST,PUT,DELETE,OPTIONS,PROPFIND,MKCOL");
+    servletResponse.setHeader("Access-Control-Max-Age", "3600");
   }
 }
