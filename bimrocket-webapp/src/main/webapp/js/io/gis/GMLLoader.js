@@ -129,7 +129,7 @@ class GMLLoader extends GISLoader
 {
   constructor(manager)
   {
-    super(manager, "application/gml+xml", "text/xml");
+    super(manager, "gml3");
     this.options = {
       extrusionHeight: 1,
       targetProjection: 'EPSG:25831',
