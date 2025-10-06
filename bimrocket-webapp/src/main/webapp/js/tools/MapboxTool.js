@@ -152,7 +152,7 @@ class MapboxTool extends Tool
                 this.mapboxLayerGroup.rotation.x = Math.PI/2;
                 this.mapboxLayerGroup.rotation.y = 0;
 
-                this.mapboxLayerGroup.position.set(253, 5668, -0.1);
+                this.mapboxLayerGroup.position.set(253, 5668, -2);
 
                 this.mapboxLayerGroup.updateMatrix();
                 this.mapboxLayerGroup.updateMatrixWorld(true);
