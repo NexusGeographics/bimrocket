@@ -176,14 +176,26 @@ class WmsImportTool extends Tool
 
         try
         {
-            console.log("application: ", this.application);
-            console.log("camera: ", this.application.camera);
             const application = this.application;
             const camera = application.camera;
             const provider = new WMSLoader(url, layers, crs);
+            const renderer = new THREE.WebGLRenderer();
             const mapViewGeoT = new MapView(MapView.PLANAR, provider, camera);
-            console.log("mapViewGeoT: ", mapViewGeoT);
+
+            provider.minZoom = 13;
+            camera.position.z += 0.00001;
             mapViewGeoT.name = "MapView";
+            mapViewGeoT.subDivisionsRays = 64;
+            renderer.render(application.scene, camera);
+
+            function animate() 
+            {
+                requestAnimationFrame(animate);
+                mapViewGeoT.updateMatrixWorld(camera);
+                renderer.render(application.scene, camera);
+            }
+            
+            animate();
 
             this.wmsLayerGroup = new THREE.Group();
             this.wmsLayerGroup.name = "WMS Layer - " + layers;
