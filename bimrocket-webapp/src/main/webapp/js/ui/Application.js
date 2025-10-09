@@ -35,7 +35,6 @@ import { EffectComposer } from "../postprocessing/EffectComposer.js";
 import { RenderPass } from "../postprocessing/RenderPass.js";
 import { SAOPass } from "../postprocessing/SAOPass.js";
 import { OutputPass } from "../postprocessing/OutputPass.js";
-import { loadGmlLayer } from "../utils/GISUtils.js";
 import { ObjectBatcher } from "../utils/ObjectBatcher.js";
 import { I18N } from "../i18n/I18N.js";
 import WebGL from "../utils/WebGL.js";
@@ -2075,11 +2074,6 @@ class Application
       application.progressBar.visible = true;
       IOManager.load(intent); // async load
     }
-  }
-
-  loadGmlLayer(options)
-  {
-    return loadGmlLayer(options);
   }
 
   initTasks()
