@@ -165,7 +165,8 @@ class WmsImportTool extends Tool
     importWmsUrl()
     {
         console.log("--- [DEBUG] Iniciant importació WMS ---");
-        this.cleanup();
+        //TODO: descomentar per esborrar capa anterior i que no xoquin
+        // this.cleanup();
 
         const url = this.urlInput.value;
         const layers = this.layersInput.value;

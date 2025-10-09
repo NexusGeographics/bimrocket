@@ -90,6 +90,7 @@ services:
     validUrls:
       - https://api.openai.com/
       - https://api.bsdd.buildingsmart.org/
+      # TODO: eliminar les següents url
       - https://gis.santfeliu.cat/geoserver/wfs
       - https://gis.santfeliu.cat/geoserver/ 
       - https://gis.santfeliu.cat/
