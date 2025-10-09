@@ -70,9 +70,12 @@ class WmsImportTool extends Tool
     {
         if (this.wmsLayerGroup)
         {
-            const mapView = this.wmsLayerGroup.getObjectByProperty('isMapView', true);
-            if (mapView) { mapView.dispose(); }
-            this.application.removeObject(this.wmsLayerGroup, null, true);
+            if (this.wmsLayerGroup.parent)
+            {
+                const mapView = this.wmsLayerGroup.getObjectByProperty('isMapView', true);
+                if (mapView) { mapView.dispose(); }
+                this.application.removeObject(this.wmsLayerGroup, null, true);
+            }
             this.wmsLayerGroup = null;
         }
     }
