@@ -11,6 +11,119 @@ import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
 import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
+// import GML3 from 'ol/format/GML3.js';
+// import GML32 from 'ol/format/GML32.js';
+
+// function getGMLOptions(xmlString) {
+//   const parser = new DOMParser();
+//   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+//   const memberEl = xmlDoc.querySelector(
+//     "*|member, *|featureMember, *|featureMembers"
+//   );
+
+//   if (!memberEl || !memberEl.firstElementChild) {
+//     console.warn("No feature member element was found.");
+//     return {};
+//   }
+
+//   const featureMemberTag = memberEl.tagName;
+//   const featureEl = memberEl.firstElementChild;
+//   const featureType = featureEl.localName;
+//   const featureNS = featureEl.namespaceURI;
+//   const geomQ = featureEl.querySelector(
+//     "*|Point, *|Polygon, *|LineString, *|MultiPoint, *|MultiPolygon, *|MultiLineString"
+//   );
+//   const geometryName = geomQ && geomQ.parentNode
+//     ? geomQ.parentNode.localName
+//     : null;
+  
+//   if (!geometryName) {
+//     console.warn("Could not determine 'geometryName'.");
+//   }
+
+//   const srsEl = xmlDoc.querySelector("[srsName]");
+//   const srsName = srsEl
+//     ? srsEl.getAttribute("srsName").replace(
+//         /urn:ogc:def:crs:EPSG:(\d+)/,
+//         "EPSG:$1"
+//       )
+//     : null;
+
+//   const options = {
+//     featureNS,
+//     featureType
+//   };
+//   if (geometryName) {
+//     options.geometryName = geometryName;
+//   }
+//   if (srsName)              {options.srsName      = srsName;}
+//   if (featureMemberTag)     { options.featureMember = featureMemberTag;}
+
+//   return options;
+// }
+
+// function detectGMLVersion(xmlString) {
+//   const parser = new DOMParser();
+//   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+//   const rootElement = xmlDoc.documentElement;
+//   if (rootElement && rootElement.hasAttribute("version")) {
+//     return rootElement.getAttribute("version");
+//   }
+//   const featureCollection = xmlDoc.querySelector("FeatureCollection, *|FeatureCollection");
+//   if (featureCollection && featureCollection.hasAttribute("version")) {
+//      return featureCollection.getAttribute("version");
+//   }
+//   return null;
+// }
+
+let GML3, GML32, proj4, olProj4Register;
+let dependenciesPromise = null;
+
+async function ensureDependencies()
+{
+  if (dependenciesPromise)
+  {
+    return dependenciesPromise;
+  }
+
+  dependenciesPromise = new Promise(async (resolve, reject) =>
+  {
+    try
+    {
+      const [
+        GML3Module,
+        GML32Module,
+        olProj4Module,
+        proj4Module
+      ] = await Promise.all([
+        import('ol/format/GML3.js'),
+        import('ol/format/GML32.js'),
+        import('ol/proj/proj4.js'),
+        import('proj4')
+      ]);
+
+      GML3 = GML3Module.default;
+      GML32 = GML32Module.default;
+      proj4 = proj4Module.default;
+      olProj4Register = olProj4Module.register;
+
+      if (!proj4.defs['EPSG:25831'])
+      {
+        proj4.defs('EPSG:25831', '+proj=utm +zone=31 +ellps=GRS80 +units=m +no_defs');
+      }
+      olProj4Register(proj4);
+      resolve();
+    }
+    catch (error)
+    {
+      console.error(error);
+      dependenciesPromise = null;
+      reject(error);
+    }
+  });
+
+  return dependenciesPromise;
+}
 
 let GML3, GML32, proj4, olProj4Register;
 let dependenciesPromise = null;
