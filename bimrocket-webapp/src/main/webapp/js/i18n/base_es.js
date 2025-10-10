@@ -124,10 +124,6 @@ export const translations =
   "tool.wms_import.label" : "Introducir url del wms",
   "tool.wms_import.help" : "Introducir url del wms",
 
-/* wms import tool */
-  "tool.wms_import.label" : "Introducir url del wms",
-  "tool.wms_import.help" : "Introducir url del wms",
-
   "tool.savelocal.label" : "Guardar en local",
   "tool.savelocal.help" : "Guardar en local",
 
