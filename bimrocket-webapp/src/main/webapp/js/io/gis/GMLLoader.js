@@ -11,58 +11,6 @@ import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
 import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
-import GML3 from 'ol/format/GML3.js';
-import GML32 from 'ol/format/GML32.js';
-import * as proj4Module from 'proj4';
-import { register } from "ol/proj/proj4.js";
-
-function getGMLOptions(xmlString) {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-  const memberEl = xmlDoc.querySelector(
-    "*|member, *|featureMember, *|featureMembers"
-  );
-
-  if (!memberEl || !memberEl.firstElementChild) {
-    console.warn("No feature member element was found.");
-    return {};
-  }
-
-  const featureMemberTag = memberEl.tagName;
-  const featureEl = memberEl.firstElementChild;
-  const featureType = featureEl.localName;
-  const featureNS = featureEl.namespaceURI;
-  const geomQ = featureEl.querySelector(
-    "*|Point, *|Polygon, *|LineString, *|MultiPoint, *|MultiPolygon, *|MultiLineString"
-  );
-  const geometryName = geomQ && geomQ.parentNode
-    ? geomQ.parentNode.localName
-    : null;
-  
-  if (!geometryName) {
-    console.warn("Could not determine 'geometryName'.");
-  }
-
-  const srsEl = xmlDoc.querySelector("[srsName]");
-  const srsName = srsEl
-    ? srsEl.getAttribute("srsName").replace(
-        /urn:ogc:def:crs:EPSG:(\d+)/,
-        "EPSG:$1"
-      )
-    : null;
-
-  const options = {
-    featureNS,
-    featureType
-  };
-  if (geometryName) {
-    options.geometryName = geometryName;
-  }
-  if (srsName)              {options.srsName      = srsName;}
-  if (featureMemberTag)     { options.featureMember = featureMemberTag;}
-
-  return options;
-}
 
 let GML3, GML32, proj4, olProj4Register;
 let dependenciesPromise = null;
