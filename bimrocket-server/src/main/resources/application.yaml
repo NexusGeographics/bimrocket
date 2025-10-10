@@ -90,6 +90,10 @@ services:
     validUrls:
       - https://api.openai.com/
       - https://api.bsdd.buildingsmart.org/
+      # TODO: treure aquestes lines abans de la PR
+      - https://gis.santfeliu.cat/geoserver/wfs
+      - https://gis.santfeliu.cat/geoserver/ 
+      - https://gis.santfeliu.cat/
     aliases:
       chatgpt:
         url: https://api.openai.com/v1/chat/completions
