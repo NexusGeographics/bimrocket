@@ -164,6 +164,8 @@ class WmsImportTool extends Tool
 
     addWMS()
     {
+        this.cleanup();
+
         const url = this.urlInput.value;
         const layers = this.layersInput.value;
         const crs = this.crsInput.value;
@@ -175,31 +177,42 @@ class WmsImportTool extends Tool
             return;
         }
 
-        const wmsLayerGroup = new THREE.Group();
-        wmsLayerGroup.name = "WMS Layer - " + layers;
+            const wmsLayerGroup = new THREE.Group();
+            wmsLayerGroup.name = "WMS Layer - " + layers;
 
-        if(this.wmsLayerGroup)
+            if (!wmsLayerGroup.controllers)
+            {
+                wmsLayerGroup.controllers = {};
+            }
+
+            const controller = new WMSController(wmsLayerGroup, "wms_controller");
+            controller.url = url;
+            controller.layers = layers;
+            controller.crs = crs;
+            
+            wmsLayerGroup.controllers["wms_controller"] = controller;
+            
+            this.wmsLayerGroup = wmsLayerGroup;
+            this.wmsController = controller;
+
+            application.addObject(this.wmsLayerGroup, application.baseObject);
+            application.initControllers(this.wmsLayerGroup);
+        this.closeDialog();
+    }
+
+    cleanup()
+    {
+        if (this.wmsLayerGroup)
         {
-            this.application.removeObject(this.wmsLayerGroup);
+            if (this.wmsLayerGroup.parent)
+            {
+                const mapView = this.wmsLayerGroup.getObjectByProperty('isMapView', true);
+                if (mapView) { mapView.dispose(); }
+                this.application.removeObject(this.wmsLayerGroup, null, true);
+            }
             this.wmsLayerGroup = null;
         }
-
-        if (!wmsLayerGroup.controllers)
-        {
-            wmsLayerGroup.controllers = {};
-        }
-
-        const controller = new WMSController(wmsLayerGroup, "wms_controller");
-        controller.url = url;
-        controller.layers = layers;
-        controller.crs = crs;
-        
-        wmsLayerGroup.controllers["wms_controller"] = controller;
-        
-        application.addObject(this.wmsLayerGroup, application.baseObject);
-        application.initControllers(wmsLayerGroup);
-                
-        this.closeDialog();
+        this.wmsController = null;
     }
 
     closeDialog()

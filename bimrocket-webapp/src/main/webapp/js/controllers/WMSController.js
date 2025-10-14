@@ -32,7 +32,6 @@ class WMSController extends Controller
 
     this._mapView = null;
     this._onNodeChanged = this.onNodeChanged.bind(this);
-    // this._animate = this.animate.bind(this);
 
     this._lastUrl = null;
     this._lastLayers = null;
@@ -52,7 +51,6 @@ class WMSController extends Controller
   onStop()
   {
     this.application.removeEventListener("scene", this._onNodeChanged);
-    this.stopAnimation();
     this.removeMap();
   }
 
@@ -63,7 +61,12 @@ class WMSController extends Controller
       if (this.url !== this._lastUrl || 
           this.layers !== this._lastLayers || 
           this.crs !== this._lastCrs)
-          {
+      {
+        if (this.layers !== this._lastLayers && this.layers)
+        {
+          this.object.name = "WMS Layer - " + this.layers;
+          this.application.notifyObjectsChanged(this.object, this, "nameChanged");
+        }
         this.updateMap();
       }
     }
@@ -74,6 +77,7 @@ class WMSController extends Controller
     this.removeMap();
 
     if (!this.url || !this.layers || !this.crs) return;
+    //TODO: traduccions
     if (this.crs.toUpperCase() !== "EPSG:3857")
     {
         MessageDialog.create("ERROR", `WMSController: CRS must be EPSG:3857, but got ${this.crs}.`).setI18N(this.application.i18n).show();
@@ -83,6 +87,11 @@ class WMSController extends Controller
     this._lastUrl = this.url;
     this._lastLayers = this.layers;
     this._lastCrs = this.crs;
+
+    if (this.layers)
+    {
+      this.object.name = "WMS Layer - " + this.layers;
+    }
 
     try
     {
@@ -121,8 +130,7 @@ class WMSController extends Controller
       this.object.updateMatrix();
       this.object.updateMatrixWorld(true);
 
-      application.addObject(this.object, application.baseObject);
-      application.notifyObjectsChanged(camera, this);
+      application.notifyObjectsChanged(this.object, this);
 
       console.log(`[WMSController] WMS layer '${this.layers}' created.`);
     } 
