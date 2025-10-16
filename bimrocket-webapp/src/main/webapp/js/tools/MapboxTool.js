@@ -13,170 +13,186 @@ proj4.defs("EPSG:25831", "+proj=utm +zone=31 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0
 
 class MapboxTool extends Tool
 {
-    constructor(application)
+  constructor(application)
+  {
+    super(application);
+    this.name = "mapbox_import";
+    this.label = "tool.mapbox_import.label";
+    this.help = "tool.mapbox_import.help";
+    this.className = "mapboxImport";
+    this.immediate = true;
+
+    this.dialog = this.createDialog();
+    this.debugLayerGroup = null;
+  }
+
+  execute()
+  {
+    this.dialog.show();
+  }
+
+  cleanup()
+  {
+    if (this.debugLayerGroup)
     {
-        super(application);
-        this.name = "mapbox_import";
-        this.label = "tool.mapbox_import.label";
-        this.help = "tool.mapbox_import.help";
-        this.className = "mapboxImport";
-        this.immediate = true;
-        
-        this.dialog = this.createDialog();
-        this.debugLayerGroup = null;
+      const mapView = this.debugLayerGroup.getObjectByProperty("isMapView", true);
+      if (mapView)
+      {
+        mapView.dispose();
+      }
+      this.application.removeObject(this.debugLayerGroup, null, true);
+      this.debugLayerGroup = null;
+    }
+  }
+
+  createDialog()
+  {
+    const dialog = new Dialog("Importar capa Mapbox");
+    dialog.setSize(400, 300);
+    dialog.setI18N(this.application.i18n);
+
+    // API Key input container
+    const container = document.createElement("div");
+    container.style.marginTop = "10px";
+
+    const label = document.createElement("label");
+    label.textContent = "Mapbox API Key:";
+    label.style.display = "block";
+    label.style.marginBottom = "5px";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.style.width = "95%";
+    input.style.padding = "8px";
+    input.value = "pk.eyJ1Ijoic21vdS1uZXh1cyIsImEiOiJjbWc4NG11eGcwM2F3MmlzYXl5Y280bXhhIn0.NocwZXz1yhMvVBS5ZfnROg";
+
+    container.appendChild(label);
+    container.appendChild(input);
+
+    // Debug checkbox container
+    const debugContainer = document.createElement("div");
+    debugContainer.style.marginTop = "15px";
+
+    const debugCheck = document.createElement("input");
+    debugCheck.type = "checkbox";
+    debugCheck.id = "debugCheck";
+
+    const debugLabel = document.createElement("label");
+    debugLabel.htmlFor = "debugCheck";
+    debugLabel.textContent = "Debug Layer";
+    debugLabel.style.marginLeft = "5px";
+
+    debugContainer.appendChild(debugCheck);
+    debugContainer.appendChild(debugLabel);
+
+    this.apiKeyInput = input;
+    this.debugCheck = debugCheck;
+
+    dialog.bodyElem.appendChild(container);
+    dialog.bodyElem.appendChild(debugContainer);
+
+    dialog.addButton("import", "button.accept", () => this.importMapbox());
+    dialog.addButton("close", "button.close", () => this.closeDialog());
+
+    return dialog;
+  }
+
+  importMapbox()
+  {
+    console.log("--- [DEBUG] Iniciant importació Mapbox ---");
+    console.log("key:", this.apiKeyInput.value);
+    this.cleanup();
+
+    const apiKey = this.apiKeyInput.value;
+
+    if (!apiKey)
+    {
+      MessageDialog.create("ERROR", "La API Key de Mapbox és obligatòria.").show();
+      return;
     }
 
-    execute()
+    try
     {
-        this.dialog.show();
-    }
+      const debugLayer = this.debugCheck.checked;
+      const application = this.application;
+      const camera = application.camera;
+      if (debugLayer)
+      {
+        const provider = new DebugProvider();
+        const mapViewGeoThree = new MapView(MapView.PLANAR, provider, camera);
+        mapViewGeoThree.name = "DebugView";
 
-    cleanup()
+        this.debugLayerGroup = new THREE.Group();
+        this.debugLayerGroup.name = "Debug Layer";
+        this.debugLayerGroup.add(mapViewGeoThree);
+        this.debugLayerGroup.rotation.x = Math.PI / 2;
+        this.debugLayerGroup.rotation.y = 0;
+        this.debugLayerGroup.position.set(253, 5668, -0.1);
+
+        this.debugLayerGroup.updateMatrix();
+        this.debugLayerGroup.updateMatrixWorld(true);
+        application.addObject(this.debugLayerGroup, application.baseObject);
+        application.notifyObjectsChanged(camera, this);
+
+        this.closeDialog();
+        console.log("--- [DEBUG] Importació Debug Layer finalitzada. ---");
+      }
+      else
+      {
+        const vectorProvider = new MapBoxProvider
+        (
+          apiKey,
+          "mapbox.satellite",
+          MapBoxProvider.MAP_ID,
+          "jpg70"
+        );
+        
+        const heightProvider = new MapBoxProvider
+        (
+          apiKey,
+          "mapbox.terrain-rgb",
+          MapBoxProvider.MAP_ID,
+          "pngraw"
+        );
+
+        const mapView = new MapView(MapView.HEIGHT, vectorProvider, heightProvider);
+        mapView.name = "MapboxView";
+
+        this.mapboxLayerGroup = new THREE.Group();
+        this.mapboxLayerGroup.name = "Mapbox Layer";
+        this.mapboxLayerGroup.add(mapView);
+
+        this.mapboxLayerGroup.rotation.x = Math.PI / 2;
+        this.mapboxLayerGroup.rotation.y = 0;
+
+        this.mapboxLayerGroup.position.set(253, 5668, -2);
+
+        this.mapboxLayerGroup.updateMatrix();
+        this.mapboxLayerGroup.updateMatrixWorld(true);
+
+        application.addObject(this.mapboxLayerGroup, application.baseObject);
+        application.notifyObjectsChanged(camera, this);
+
+        this.closeDialog();
+
+        console.log("--- [DEBUG] Importació Mapbox amb height finalitzada. ---");
+      }
+    }
+    catch (err)
     {
-        if (this.debugLayerGroup)
-        {
-            const mapView = this.debugLayerGroup.getObjectByProperty('isMapView', true);
-            if (mapView) { mapView.dispose(); }
-            this.application.removeObject(this.debugLayerGroup, null, true);
-            this.debugLayerGroup = null;
-        }
+      console.error("Error durant la importació Mapbox:", err);
+      MessageDialog.create
+        ("ERROR", "Error durant la importació: " + err.message)
+          .setClassName("error")
+          .setI18N(this.application.i18n)
+          .show();
     }
+  }
 
-    createDialog()
-    {
-        const dialog = new Dialog("Importar capa Mapbox");
-        dialog.setSize(400, 250);
-        dialog.setI18N(this.application.i18n);
-
-        // API Key input container
-        const container = document.createElement("div");
-        container.style.marginTop = "10px";
-        
-        const label = document.createElement("label");
-        label.textContent = "Mapbox API Key:";
-        label.style.display = "block";
-        label.style.marginBottom = "5px";
-        
-        const input = document.createElement("input");
-        input.type = "text";
-        input.style.width = "95%";
-        input.style.padding = "8px";
-        input.value = "pk.eyJ1Ijoic21vdS1uZXh1cyIsImEiOiJjbWc4NG11eGcwM2F3MmlzYXl5Y280bXhhIn0.NocwZXz1yhMvVBS5ZfnROg";
-        
-        container.appendChild(label);
-        container.appendChild(input);
-        
-        // Debug checkbox container
-        const debugContainer = document.createElement("div");
-        debugContainer.style.marginTop = "15px";
-        
-        const debugCheck = document.createElement("input");
-        debugCheck.type = "checkbox";
-        debugCheck.id = "debugCheck";
-        
-        const debugLabel = document.createElement("label");
-        debugLabel.htmlFor = "debugCheck";
-        debugLabel.textContent = "Debug Layer";
-        debugLabel.style.marginLeft = "5px";
-        
-        debugContainer.appendChild(debugCheck);
-        debugContainer.appendChild(debugLabel);
-        
-        this.apiKeyInput = input;
-        this.debugCheck = debugCheck;
-        
-        dialog.bodyElem.appendChild(container);
-        dialog.bodyElem.appendChild(debugContainer);
-
-        dialog.addButton("import", "button.accept", () => this.importMapbox());
-        dialog.addButton("close", "button.close", () => this.closeDialog());
-        
-        return dialog;
-    }
-
-    importMapbox()
-    {
-        console.log("--- [DEBUG] Iniciant importació Mapbox ---");
-        console.log("key:", this.apiKeyInput.value);
-        this.cleanup();
-
-        const apiKey = this.apiKeyInput.value;
-
-        if (!apiKey)
-        {
-            MessageDialog.create("ERROR", "La API Key de Mapbox és obligatòria.").show();
-            return;
-        }
-
-        try
-        {
-            const debugLayer = this.debugCheck.checked;
-            if (debugLayer) {
-                const application = this.application;
-                const camera = application.camera;
-                const provider  = new DebugProvider();
-                const mapViewGeoThree = new MapView(MapView.PLANAR, provider, camera);
-
-                mapViewGeoThree.name = "DebugView";
-
-                this.debugLayerGroup = new THREE.Group();
-                this.debugLayerGroup.name = "Debug Layer";
-                this.debugLayerGroup.add(mapViewGeoThree);
-
-                this.debugLayerGroup.rotation.x = Math.PI/2;
-                this.debugLayerGroup.rotation.y = 0;
-
-                this.debugLayerGroup.position.set(253, 5668, -0.1);
-
-                this.debugLayerGroup.updateMatrix();
-                this.debugLayerGroup.updateMatrixWorld(true);
-
-                application.addObject(this.debugLayerGroup, application.baseObject);
-                application.notifyObjectsChanged(camera, this);
-
-                this.closeDialog();
-
-                console.log("--- [DEBUG] Importació Debug Layer finalitzada. ---");
-             } else {
-                const application = this.application;
-                const camera = application.camera;
-                const provider = new MapBoxProvider(apiKey, 'mapbox.satellite', MapBoxProvider.MAP_ID, 'jpg70', false);
-                const mapView = new MapView(MapView.HEIGHT, provider, camera);
-
-                mapView.name = "MapboxView";
-
-                this.mapboxLayerGroup = new THREE.Group();
-                this.mapboxLayerGroup.name = "Mapbox Layer";
-                this.mapboxLayerGroup.add(mapView);
-
-                this.mapboxLayerGroup.rotation.x = Math.PI/2;
-                this.mapboxLayerGroup.rotation.y = 0;
-
-                this.mapboxLayerGroup.position.set(253, 5668, -2);
-
-                this.mapboxLayerGroup.updateMatrix();
-                this.mapboxLayerGroup.updateMatrixWorld(true);
-
-                application.addObject(this.mapboxLayerGroup, application.baseObject);
-                application.notifyObjectsChanged(camera, this);
-
-                this.closeDialog();
-
-                console.log("--- [DEBUG] Importació Mapbox finalitzada. ---");
-            }
-        } catch (err)
-        {
-            console.error("Error durant la importació Mapbox:", err);
-            MessageDialog.create("ERROR", "Error durant la importació: " + err.message)
-              .setClassName("error")
-              .setI18N(this.application.i18n).show();
-        }
-    }
-
-    closeDialog()
-    {
-        this.dialog.hide();
-    }
+  closeDialog()
+  {
+    this.dialog.hide();
+  }
 }
 
 export { MapboxTool };
