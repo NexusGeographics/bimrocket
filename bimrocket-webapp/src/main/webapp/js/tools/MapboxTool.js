@@ -4,6 +4,7 @@ import { MessageDialog } from "../ui/MessageDialog.js";
 import * as THREE from "three";
 import { MapView, MapBoxProvider, DebugProvider } from "geo-three";
 import proj4 from 'proj4';
+import { ICGCHeightProvider } from "../io/gis/ICGCHeightProvider.js";
 
 // Projecció Web Mercator (EPSG:3857)
 proj4.defs("EPSG:3857", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
@@ -147,12 +148,20 @@ class MapboxTool extends Tool
           "jpg70"
         );
         
-        const heightProvider = new MapBoxProvider
+       /* const heightProvider = new MapBoxProvider
         (
           apiKey,
           "mapbox.terrain-rgb",
           MapBoxProvider.MAP_ID,
           "pngraw"
+        );*/
+
+        const heightProvider = new ICGCHeightProvider
+        (
+          apiKey,
+          "mapbox.terrain-rgb",
+          MapBoxProvider.MAP_ID,
+          "png"
         );
 
         const mapView = new MapView(MapView.HEIGHT, vectorProvider, heightProvider);
