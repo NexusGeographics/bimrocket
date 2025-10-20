@@ -6,5 +6,6 @@
 
 export const translations =
 {
-  "controller.WFSController" : "Carrega geometria d'un servei WFS."
+  "controller.WFSController" : "Carrega geometria d'un servei WFS.",
+  "controller.WMSController" : "Loads a WMS (Web Map Service) layer."
 };

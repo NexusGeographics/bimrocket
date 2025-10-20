@@ -12,6 +12,7 @@ import { Profile } from "../../core/Profile.js";
 import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
 
+
 let GML3, GML32, proj4, olProj4Register;
 let dependenciesPromise = null;
 
@@ -65,7 +66,7 @@ class GMLLoader extends GISLoader
 {
   constructor(manager)
   {
-    super(manager, "application/gml+xml", "text/xml");
+    super(manager, "gml3");
     this.options = {
       extrusionHeight: 1,
       targetProjection: 'EPSG:25831',
