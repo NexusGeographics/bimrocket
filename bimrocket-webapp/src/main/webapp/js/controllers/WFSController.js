@@ -52,6 +52,10 @@ class WFSController extends Controller
   {
   }
 
+  flatFeatures(features) {
+    return features.flatMap(item => item.children ? [item,...this.flatFeatures(item.children)] : [item])
+  }
+
   onLoad(group)
   {
     group.name = this.layer;
@@ -76,8 +80,7 @@ class WFSController extends Controller
     {
       featureGroup = new THREE.Group();
       featureGroup.name = this.layer;
-
-      const features = [...group.children]; // explode group
+      const features = this.flatFeatures(group.children)
       group.clear();
 
       for (let feature of features)
@@ -198,38 +201,40 @@ class WFSController extends Controller
     else
     {
       loader = new GeoJSONLoader();
-    }
-    if (url.indexOf("?") === -1)
-    {
-      url += "?";
-    }
-    else
-    {
-      url += "&";
-    }
-    url += "service=wfs&version=2.0.0&request=GetFeature&outputFormat=" +
+      if (url.indexOf("?") === -1)
+      {
+        url += "?";
+      }
+      else
+      {
+        url += "&";
+      }
+      url += "service=wfs&version=2.0.0&request=GetFeature&outputFormat=" +
       loader.mimeType + "&typeName=" + layer;
-    const count = this.count;
-    if (count > 0)
-    {
-      url += "&count=" + count;
+      const count = this.count;
+      if (count > 0)
+      {
+        url += "&count=" + count;
+      }
+      const bbox = this.bbox;
+      if (bbox && bbox.length > 0)
+      {
+        url += "&bbox=" + bbox;
+      }
+      const cqlFilter = this.cqlFilter;
+      if (cqlFilter && cqlFilter.length > 0)
+      {
+        url += "&CQL_FILTER=" + cqlFilter;
+      }
+      const srsName = this.srsName;
+      if (srsName && srsName.length > 0)
+      {
+          url += "&srsName=" + srsName;  
+      }
     }
-    const bbox = this.bbox;
-    if (bbox && bbox.length > 0)
+
+    loader.options =
     {
-      url += "&bbox=" + bbox;
-    }
-    const cqlFilter = this.cqlFilter;
-    if (cqlFilter && cqlFilter.length > 0)
-    {
-      url += "&CQL_FILTER=" + cqlFilter;
-    }
-    const srsName = this.srsName;
-    if (srsName && srsName.length > 0)
-    {
-      url += "&srsName=" + srsName;
-    }
-    loader.options = {
       name: layer || "wfs",
       username: this.username,
       password: this.password,
