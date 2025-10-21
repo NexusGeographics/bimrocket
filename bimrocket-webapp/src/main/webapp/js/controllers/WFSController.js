@@ -206,7 +206,7 @@ class WFSController extends Controller
     const isGML = format === "GML";
     loader = isGML ? new GMLLoader() : new GeoJSONLoader();
     
-    const version = isGML ? (this.version || "1.1.0") : this.version;
+    const version = isGML ? "1.1.0" : this.version;
     url += "service=wfs&version=" + version + 
          "&request=GetFeature&outputFormat=" + loader.mimeType + 
          "&typeName=" + layer;
