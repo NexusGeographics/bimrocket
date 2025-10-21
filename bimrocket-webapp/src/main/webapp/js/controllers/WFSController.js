@@ -194,44 +194,51 @@ class WFSController extends Controller
     let layer = this.layer;
     let format = this.format || "GeoJSON";
     let loader;
-    if (format === "GML")
+
+    if (url.indexOf("?") === -1)
     {
-      loader = new GMLLoader();
+      url += "?";
     }
     else
     {
-      loader = new GeoJSONLoader();
-      if (url.indexOf("?") === -1)
-      {
-        url += "?";
-      }
-      else
-      {
-        url += "&";
-      }
-      url += "service=wfs&version=2.0.0&request=GetFeature&outputFormat=" +
-      loader.mimeType + "&typeName=" + layer;
-      const count = this.count;
-      if (count > 0)
-      {
-        url += "&count=" + count;
-      }
-      const bbox = this.bbox;
-      if (bbox && bbox.length > 0)
-      {
-        url += "&bbox=" + bbox;
-      }
-      const cqlFilter = this.cqlFilter;
-      if (cqlFilter && cqlFilter.length > 0)
-      {
-        url += "&CQL_FILTER=" + cqlFilter;
-      }
-      const srsName = this.srsName;
-      if (srsName && srsName.length > 0)
-      {
-          url += "&srsName=" + srsName;  
-      }
+      url += "&";
     }
+
+    if (format === "GML")
+    {
+      console.log("Using GMLLoader");
+      loader = new GMLLoader();
+      url += "service=wfs&version=1.1.0&request=GetFeature&outputFormat=" + loader.mimeType + "&typeName=" + layer;
+    }
+    else
+    {
+      console.log("Using GeoJSONLoader");
+      loader = new GeoJSONLoader();
+      url += "service=wfs&version=2.0.0&request=GetFeature&outputFormat=" + loader.mimeType + "&typeName=" + layer;
+    }
+    
+    
+    const count = this.count;
+    if (count > 0)
+    {
+      url += "&count=" + count;
+    }
+    const bbox = this.bbox;
+    if (bbox && bbox.length > 0)
+    {
+      url += "&bbox=" + bbox;
+    }
+    const cqlFilter = this.cqlFilter;
+    if (cqlFilter && cqlFilter.length > 0)
+    {
+      url += "&CQL_FILTER=" + cqlFilter;
+    }
+    const srsName = this.srsName;
+    if (srsName && srsName.length > 0)
+    {
+        url += "&srsName=" + srsName;  
+    }
+  
 
     loader.options =
     {
