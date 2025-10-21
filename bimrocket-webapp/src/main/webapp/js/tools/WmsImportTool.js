@@ -52,6 +52,13 @@ class WmsImportTool extends Tool
                 layer: "divisions_administratives_capsdemunicipi_capcomarca,divisions_administratives_capsdemunicipi_capmunicipi,divisions_administratives_municipis_5000,divisions_administratives_municipis_50000,divisions_administratives_municipis_100000,divisions_administratives_municipis_250000,divisions_administratives_comarques_5000,divisions_administratives_comarques_50000,divisions_administratives_comarques_100000,divisions_administratives_comarques_250000,divisions_administratives_comarques_500000,divisions_administratives_comarques_1000000",
                 crs: "EPSG:3857"
             },
+            "bcn_mtm":
+            {
+                label: "GeoBCN - MTM 3857",
+                url: "https://geo.bcn.cat/mapproxy/service",
+                layer: "MTM",
+                crs: "EPSG:3857"
+            },
             "icgc_geologic2":
             {
                 label: "ICGC - Divisions administratives 25831",
