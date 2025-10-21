@@ -261,19 +261,13 @@ class GMLLoader extends GISLoader
 
       const profileGeometry = new ProfileGeometry(shape);
       const profile = new Profile(profileGeometry, this.lineMaterial);
-      profile.name = `${name}_profile`;
-      profile.visible = false;
 
-      const solid = new Solid();
-      this.setObjectProperties(solid, name, properties);
-      solid.add(profile);
+      profile.visible = true;
+      this.setObjectProperties(profile, name, properties);
+      parent.add(profile);
 
-      const extruder = new Extruder(extrusionHeight);
-      solid.builder = extruder;
+      profile.updateMatrix();
 
-      ObjectBuilder.build(solid);
-
-      parent.add(solid);
     }
     catch (ex)
     {
