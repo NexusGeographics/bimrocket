@@ -34,6 +34,7 @@ class WFSController extends Controller
     this.cqlFilter = "";
     this.count = 0;
     this.srsName = "";
+    this.version = "2.0.0";
     this.representationMode = WFSController.ADD_OBJECT_REPR_MODE;
     this.mergeGeometries = false;
     this.origin = new THREE.Vector3(420878, 4582247, 0);
@@ -139,7 +140,6 @@ class WFSController extends Controller
     featureGroup.userData.export.exportChildren = false;
 
     this.application.notifyObjectsChanged(this.object, this, "structureChanged");
-    console.info("Feature " + this.layer + " loaded (" + featureCount + ").");
   }
 
   createFeatureRepr(feature, representation)
@@ -203,20 +203,13 @@ class WFSController extends Controller
     {
       url += "&";
     }
-
-    if (format === "GML")
-    {
-      console.log("Using GMLLoader");
-      loader = new GMLLoader();
-      url += "service=wfs&version=1.1.0&request=GetFeature&outputFormat=" + loader.mimeType + "&typeName=" + layer;
-    }
-    else
-    {
-      console.log("Using GeoJSONLoader");
-      loader = new GeoJSONLoader();
-      url += "service=wfs&version=2.0.0&request=GetFeature&outputFormat=" + loader.mimeType + "&typeName=" + layer;
-    }
+    const isGML = format === "GML";
+    loader = isGML ? new GMLLoader() : new GeoJSONLoader();
     
+    const version = isGML ? (this.version || "1.1.0") : this.version;
+    url += "service=wfs&version=" + version + 
+         "&request=GetFeature&outputFormat=" + loader.mimeType + 
+         "&typeName=" + layer;
     
     const count = this.count;
     if (count > 0)
@@ -249,7 +242,6 @@ class WFSController extends Controller
       representation: this.object.getObjectByName("representation")
     };
 
-    console.info("Loading feature " + this.layer + "...");
     loader.load(url, this._onLoad, this._onProgress, this._onError);
   }
 

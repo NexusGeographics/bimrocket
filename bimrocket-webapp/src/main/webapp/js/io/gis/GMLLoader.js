@@ -5,11 +5,6 @@
  */
 
 import { GISLoader } from "./GISLoader.js";
-import { Solid } from "../../core/Solid.js";
-import { Extruder } from "../../builders/Extruder.js";
-import { ObjectBuilder } from "../../builders/ObjectBuilder.js";
-import { Profile } from "../../core/Profile.js";
-import { ProfileGeometry } from "../../core/ProfileGeometry.js";
 import * as THREE from "three";
 
 let GML3, GML32, proj4, olProj4Register;
@@ -71,18 +66,12 @@ class GMLLoader extends GISLoader
       targetProjection: 'EPSG:25831',
       name: 'layer'
     };
-    this.origin = new THREE.Vector2(0, 0);
+    this.origin = new THREE.Vector3(0, 0, 0);
   }
 
   setOptions(options)
   {
     this.options = Object.assign({}, this.options, options);
-    return this;
-  }
-
-  setOrigin(origin)
-  {
-    this.origin = origin;
     return this;
   }
 
@@ -148,7 +137,7 @@ class GMLLoader extends GISLoader
     }
   }
 
-  #getGMLOptions(xmlString)
+  _getGMLOptions(xmlString)
   {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -196,7 +185,7 @@ class GMLLoader extends GISLoader
     return options;
   }
 
-  #detectGMLVersion(xmlString)
+  _detectGMLVersion(xmlString)
   {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -211,67 +200,6 @@ class GMLLoader extends GISLoader
       return featureCollection.getAttribute("version");
     }
     return "3.1.1";
-  }
-
-  #coordinatesToRing(coordinates)
-  {
-    const points = [];
-    for (let i = 0; i < coordinates.length; i++)
-    {
-      const point = coordinates[i];
-      const vector = new THREE.Vector2(point[0], point[1]);
-      if (this.origin)
-      {
-        vector.sub(this.origin);
-      }
-      points.push(vector);
-    }
-    if (points.length > 1 && points[0].equals(points[points.length - 1]))
-    {
-      points.pop();
-    }
-    return points;
-  }
-
-  createPolygon(name, coordinates, properties, parent)
-  {
-    try
-    {
-      const extrusionHeight = this.options.extrusionHeight || 1;
-      const outerRingPoints = this.#coordinatesToRing(coordinates[0]);
-      if (outerRingPoints.length < 3)
-      {
-        return;
-      }
-
-      const shape = new THREE.Shape(outerRingPoints);
-      shape.closePath();
-
-      for (let i = 1; i < coordinates.length; i++)
-      {
-        const holePoints = this.#coordinatesToRing(coordinates[i]);
-        if (holePoints.length >= 3)
-        {
-          const holePath = new THREE.Path(holePoints);
-          holePath.closePath();
-          shape.holes.push(holePath);
-        }
-      }
-
-      const profileGeometry = new ProfileGeometry(shape);
-      const profile = new Profile(profileGeometry, this.lineMaterial);
-
-      profile.visible = true;
-      this.setObjectProperties(profile, name, properties);
-      parent.add(profile);
-
-      profile.updateMatrix();
-
-    }
-    catch (ex)
-    {
-      console.warn(`Error creating polygon "${name}":`, ex);
-    }
   }
 
   async parse(data)
@@ -290,7 +218,7 @@ class GMLLoader extends GISLoader
       .replace(/urn:ogc:def:crs:EPSG::(\d+)/g, 'EPSG:$1')
       .replace(/(<\/?)ogr:/g, '$1');
 
-    const gmlOptions = this.#getGMLOptions(xmlString);
+    const gmlOptions = this._getGMLOptions(xmlString);
     if (!gmlOptions.featureType || !gmlOptions.geometryName)
     {
       return null;
@@ -306,7 +234,7 @@ class GMLLoader extends GISLoader
       return null;
     }
 
-    const version = this.#detectGMLVersion(xmlString);
+    const version = this._detectGMLVersion(xmlString);
     const GMLFormat = (version && version.startsWith("3.2")) ? GML32 : GML3;
     const gmlFormat = new GMLFormat(gmlOptions);
 
@@ -338,7 +266,7 @@ class GMLLoader extends GISLoader
       if (olGeom)
       {
         const type = olGeom.getType();
-        const coords = olGeom.getCoordinates();
+        let coords = olGeom.getCoordinates();
         this.createObject(type, id, coords, props, featureGroup);
       }
       else
