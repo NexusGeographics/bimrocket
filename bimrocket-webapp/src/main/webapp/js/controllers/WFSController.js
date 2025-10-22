@@ -35,6 +35,7 @@ class WFSController extends Controller
     this.count = 0;
     this.srsName = "";
     this.version = "2.0.0";
+    this.outputFormat = "";
     this.representationMode = WFSController.ADD_OBJECT_REPR_MODE;
     this.mergeGeometries = false;
     this.origin = new THREE.Vector3(420878, 4582247, 0);
@@ -208,9 +209,14 @@ class WFSController extends Controller
     
     const version = isGML ? "1.1.0" : this.version;
     url += "service=wfs&version=" + version + 
-         "&request=GetFeature&outputFormat=" + loader.mimeType + 
+         "&request=GetFeature" +
          "&typeName=" + layer;
     
+    const outputFormat = this.outputFormat;
+    if (outputFormat && outputFormat.length > 0)
+    {
+      url += "&outputFormat=" + outputFormat;
+    }
     const count = this.count;
     if (count > 0)
     {

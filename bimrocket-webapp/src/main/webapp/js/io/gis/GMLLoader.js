@@ -137,10 +137,8 @@ class GMLLoader extends GISLoader
     }
   }
 
-  _getGMLOptions(xmlString)
+  _getGMLOptions(xmlDoc)
   {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     const memberEl = xmlDoc.querySelector("*|member, *|featureMember, *|featureMembers");
     if (!memberEl || !memberEl.firstElementChild)
     {
@@ -185,10 +183,8 @@ class GMLLoader extends GISLoader
     return options;
   }
 
-  _detectGMLVersion(xmlString)
+  _detectGMLVersion(xmlDoc)
   {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     const rootElement = xmlDoc.documentElement;
     if (rootElement && rootElement.hasAttribute("version"))
     {
@@ -202,23 +198,48 @@ class GMLLoader extends GISLoader
     return "3.1.1";
   }
 
+  _normalizeSRS(xmlDoc)
+  {
+    const srsElements = xmlDoc.querySelectorAll('[srsName]');
+    srsElements.forEach(element => {
+      let srsName = element.getAttribute('srsName');
+      if (srsName) {
+        srsName = srsName
+          .replace(/[^"]*#(\d+)/g, 'EPSG:$1')
+          .replace(/urn:ogc:def:crs:EPSG::(\d+)/g, 'EPSG:$1');
+        element.setAttribute('srsName', srsName);
+      }
+    });
+  }
+ 
   async parse(data)
   {
     await ensureDependencies();
 
-    let xmlString = (typeof data === 'string') ? data : (new XMLSerializer()).serializeToString(data);
-
-    if (!xmlString || xmlString.trim().length === 0)
+    let xmlDoc;
+    if (typeof data === 'string')
+    {
+      if (!data || data.trim().length === 0) return null;
+      const parser = new DOMParser();
+      xmlDoc = parser.parseFromString(data, "application/xml");
+    }
+    else if (data instanceof Document)
+    {
+      xmlDoc = data;
+    }
+    else
     {
       return null;
     }
 
-    xmlString = xmlString
-      .replace(/srsName="[^"]*#(\d+)"/g, 'srsName="EPSG:$1"')
-      .replace(/urn:ogc:def:crs:EPSG::(\d+)/g, 'EPSG:$1')
-      .replace(/(<\/?)ogr:/g, '$1');
-
-    const gmlOptions = this._getGMLOptions(xmlString);
+    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+      console.error("Error parsing GML string.");
+      return null;
+    }
+ 
+    this._normalizeSRS(xmlDoc);
+ 
+    const gmlOptions = this._getGMLOptions(xmlDoc);
     if (!gmlOptions.featureType || !gmlOptions.geometryName)
     {
       return null;
@@ -231,23 +252,25 @@ class GMLLoader extends GISLoader
     }
     if (!proj4.defs[sourceProjection])
     {
+      console.warn(`Projection ${sourceProjection} not defined in proj4.`);
       return null;
     }
 
-    const version = this._detectGMLVersion(xmlString);
+    const version = this._detectGMLVersion(xmlDoc);
     const GMLFormat = (version && version.startsWith("3.2")) ? GML32 : GML3;
     const gmlFormat = new GMLFormat(gmlOptions);
 
     let features;
     try
     {
-      features = gmlFormat.readFeatures(xmlString, {
+      features = gmlFormat.readFeatures(xmlDoc, {
         dataProjection: sourceProjection,
         featureProjection: this.options.targetProjection
       });
     }
     catch (err)
     {
+      console.error("Error reading features from GML:", err);
       return null;
     }
 
