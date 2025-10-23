@@ -206,93 +206,98 @@ class GMLLoader extends GISLoader
     });
   }
  
-  async parse(data)
+  parse(data, loadCompleted)
   {
-    await ensureDependencies();
-
-    let xmlDoc;
-    if (typeof data === 'string')
+    ensureDependencies().then(() => 
     {
-      if (!data || data.trim().length === 0) return null;
-      const parser = new DOMParser();
-      xmlDoc = parser.parseFromString(data, "application/xml");
-    }
-    else if (data instanceof Document)
-    {
-      xmlDoc = data;
-    }
-    else
-    {
-      return null;
-    }
-
-    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-      console.error("Error parsing GML string.");
-      return null;
-    }
- 
-    this._normalizeSRS(xmlDoc);
- 
-    const gmlOptions = this._getGMLOptions(xmlDoc);
-    if (!gmlOptions.featureType || !gmlOptions.geometryName)
-    {
-      return null;
-    }
-
-    const sourceProjection = gmlOptions.srsName || this.options.srsName;
-    if (!sourceProjection)
-    {
-      return null;
-    }
-    if (!proj4.defs[sourceProjection])
-    {
-      console.warn(`Projection ${sourceProjection} not defined in proj4.`);
-      return null;
-    }
-
-    const version = this._detectGMLVersion(xmlDoc);
-    const GMLFormat = (version && version.startsWith("3.2")) ? GML32 : GML3;
-    const gmlFormat = new GMLFormat(gmlOptions);
-
-    let features;
-    try
-    {
-      features = gmlFormat.readFeatures(xmlDoc, {
-        dataProjection: sourceProjection,
-        featureProjection: this.options.targetProjection
-      });
-    }
-    catch (err)
-    {
-      console.error("Error reading features from GML:", err);
-      return null;
-    }
-
-    const featureGroup = new THREE.Group();
-    featureGroup.name = this.options.name || "layer";
-    featureGroup.userData.units = "m";
-
-    for (const feature of features)
-    {
-      const olGeom = feature.getGeometry();
-      const props = feature.getProperties();
-      const id = feature.getId() || "feature";
-
-      delete props.geometry;
-
-      if (olGeom)
+      let xmlDoc;
+      if (typeof data === 'string')
       {
-        const type = olGeom.getType();
-        let coords = olGeom.getCoordinates();
-        this.createObject(type, id, coords, props, featureGroup);
+        if (!data || data.trim().length === 0) return null;
+        const parser = new DOMParser();
+        xmlDoc = parser.parseFromString(data, "application/xml");
+      }
+      else if (data instanceof Document)
+      {
+        xmlDoc = data;
       }
       else
       {
-        this.createNonVisibleObject(`${id}_nv`, props, featureGroup);
+        return null;
       }
-    }
-    return featureGroup;
+
+      if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+        console.error("Error parsing GML string.");
+        return null;
+      }
+  
+      this._normalizeSRS(xmlDoc);
+  
+      const gmlOptions = this._getGMLOptions(xmlDoc);
+      if (!gmlOptions.featureType || !gmlOptions.geometryName)
+      {
+        return null;
+      }
+
+      const sourceProjection = gmlOptions.srsName || this.options.srsName;
+      if (!sourceProjection)
+      {
+        return null;
+      }
+      if (!proj4.defs[sourceProjection])
+      {
+        console.warn(`Projection ${sourceProjection} not defined in proj4.`);
+        return null;
+      }
+
+      const version = this._detectGMLVersion(xmlDoc);
+      const GMLFormat = (version && version.startsWith("3.2")) ? GML32 : GML3;
+      const gmlFormat = new GMLFormat(gmlOptions);
+
+      let features;
+      try
+      {
+        features = gmlFormat.readFeatures(xmlDoc, {
+          dataProjection: sourceProjection,
+          featureProjection: this.options.targetProjection
+        });
+      }
+      catch (err)
+      {
+        console.error("Error reading features from GML:", err);
+        return null;
+      }
+
+      const featureGroup = new THREE.Group();
+      featureGroup.name = this.options.name || "layer";
+      featureGroup.userData.units = "m";
+
+      for (const feature of features)
+      {
+        const olGeom = feature.getGeometry();
+        const props = feature.getProperties();
+        const id = feature.getId() || "feature";
+
+        delete props.geometry;
+
+        if (olGeom)
+        {
+          const type = olGeom.getType();
+          let coords = olGeom.getCoordinates();
+          this.createObject(type, id, coords, props, featureGroup);
+        }
+        else
+        {
+          this.createNonVisibleObject(`${id}_nv`, props, featureGroup);
+        }
+      }
+      if(loadCompleted){
+        loadCompleted(featureGroup);
+      }
+      return featureGroup;
+    });
   }
+   
 }
 
 export { GMLLoader };
