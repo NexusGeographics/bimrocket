@@ -38,7 +38,7 @@ export function load(application)
     loader :
     {
       class : GMLLoader,
-      loadMethod : 0
+      loadMethod : 2
     }
   };
 

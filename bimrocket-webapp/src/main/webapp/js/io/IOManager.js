@@ -303,25 +303,9 @@ class IOManager
       else // general case: BRFLoader, STLLoader, PCDLoader, OBJLoader, GMLLoader...
       {
         let result = loader.parse(data);
-
-        if (result instanceof Promise)
-        {
-          result.then(realResult =>
-          {
-            console.info("result", result);
-            let object = this.createObject(realResult);
-            loadCompleted(object);
-          }).catch(ex =>
-          {
-            if (onError) onError(ex);
-          });
-        }
-        else
-        {
-          console.info("result", result);
-          let object = this.createObject(result);
-          loadCompleted(object);
-        }
+        console.info("result", result);
+        let object = this.createObject(result);
+        loadCompleted(object);
       }
     }
     catch (ex)

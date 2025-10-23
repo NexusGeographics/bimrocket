@@ -75,66 +75,60 @@ class GMLLoader extends GISLoader
     return this;
   }
 
-  async load(source, onLoad, onProgress, onError)
+  load(source, onLoad, onProgress, onError)
   {
-    try
+
+    const scope = this;
+    const onParseComplete = (gmlText) => {
+      return scope.parse(gmlText)
+      .then(result => {
+        if (result) {
+        if (onLoad) onLoad(result);
+        scope.manager.itemEnd(source instanceof File ? source.name : source);
+        } else {
+        const error = new Error("GML parsing failed or did not return an object.");
+        if (onError) onError(error);
+        scope.manager.itemError(source instanceof File ? source.name : source);
+        }
+      })
+      .catch(error => {
+        if (onError) onError(error);
+        scope.manager.itemError(source instanceof File ? source.name : source);
+      });
+    };
+
+    ensureDependencies().then(() =>
     {
-      await ensureDependencies();
-    }
-    catch (err)
+      if (source instanceof File)
+      {
+        const reader = new FileReader();
+        reader.onload = (event) => onParseComplete(event.target.result);
+        reader.onerror = (event) =>
+        {
+          if (onError) onError(event);
+          scope.manager.itemError(source.name);
+        };
+        reader.readAsText(source);
+      }
+      else if (typeof source === 'string')
+      {
+        const loader = new THREE.FileLoader(this.manager);
+        loader.setPath(this.path);
+        loader.setResponseType('text');
+        loader.setRequestHeader(this.requestHeader);
+        loader.setWithCredentials(this.withCredentials);
+        loader.load(source, onParseComplete, onProgress, onError);
+      }
+      else
+      {
+        const errorMsg = "Invalid load source. It must be a URL (string) or a File object.";
+        if (onError) onError(new Error(errorMsg));
+      }
+    }).catch(err =>
     {
       if (onError) onError(err);
       return;
-    }
-
-    const scope = this;
-    const onParseComplete = async (gmlText) =>
-    {
-      try
-      {
-        const result = await scope.parse(gmlText);
-        if (result)
-        {
-          if (onLoad) onLoad(result);
-        }
-        else
-        {
-          const error = new Error("GML parsing failed or did not return an object.");
-          if (onError) onError(error);
-        }
-      }
-      catch (error)
-      {
-        if (onError) onError(error);
-        scope.manager.itemError(source instanceof File ? source.name : source);
-      }
-    };
-
-    if (source instanceof File)
-    {
-      const reader = new FileReader();
-      reader.onload = (event) => onParseComplete(event.target.result);
-      reader.onerror = (event) =>
-      {
-        if (onError) onError(event);
-        scope.manager.itemError(source.name);
-      };
-      reader.readAsText(source);
-    }
-    else if (typeof source === 'string')
-    {
-      const loader = new THREE.FileLoader(this.manager);
-      loader.setPath(this.path);
-      loader.setResponseType('text');
-      loader.setRequestHeader(this.requestHeader);
-      loader.setWithCredentials(this.withCredentials);
-      loader.load(source, onParseComplete, onProgress, onError);
-    }
-    else
-    {
-      const errorMsg = "Invalid load source. It must be a URL (string) or a File object.";
-      if (onError) onError(new Error(errorMsg));
-    }
+    })
   }
 
   _getGMLOptions(xmlDoc)
