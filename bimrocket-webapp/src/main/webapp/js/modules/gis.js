@@ -13,6 +13,20 @@ import { IOManager } from "../io/IOManager.js";
 import { WFSController } from "../controllers/WFSController.js";
 import { BundleManager } from "../i18n/BundleManager.js";
 
+const importmap =
+{
+  "imports": {
+    "ol/": "https://cdn.jsdelivr.net/npm/ol@10.6.1/",
+    "proj4": "https://esm.sh/proj4@2.11.0"
+
+  }
+};
+
+const script = document.createElement('script');
+script.type = 'importmap';
+script.textContent = JSON.stringify(importmap);
+document.head.appendChild(script);
+
 export function load(application)
 {
   // register formats
@@ -51,7 +65,7 @@ export function load(application)
     loader :
     {
       class : GMLLoader,
-      loadMethod : 0
+      loadMethod : 2
     }
   };
 
