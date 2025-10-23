@@ -16,7 +16,9 @@ import { BundleManager } from "../i18n/BundleManager.js";
 const importmap =
 {
   "imports": {
-    "ol/": "https://cdn.jsdelivr.net/npm/ol@10.6.1/"
+    "ol/": "https://cdn.jsdelivr.net/npm/ol@10.6.1/",
+    "proj4": "https://esm.sh/proj4@2.11.0"
+
   }
 };
 

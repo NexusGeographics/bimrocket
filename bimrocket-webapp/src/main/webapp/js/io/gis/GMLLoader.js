@@ -208,7 +208,7 @@ class GMLLoader extends GISLoader
  
   parse(data, loadCompleted)
   {
-    ensureDependencies().then(() => 
+    return ensureDependencies().then(() => 
     {
       let xmlDoc;
       if (typeof data === 'string')
@@ -297,7 +297,6 @@ class GMLLoader extends GISLoader
       return featureGroup;
     });
   }
-   
 }
 
 export { GMLLoader };
