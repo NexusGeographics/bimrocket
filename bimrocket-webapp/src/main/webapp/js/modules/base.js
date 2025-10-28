@@ -19,6 +19,7 @@ import { SelectByNameTool } from "../tools/SelectByNameTool.js";
 import { SelectByPropertyTool } from "../tools/SelectByPropertyTool.js";
 import { SelectByQRCodeTool } from "../tools/SelectByQRCodeTool.js";
 import { ExportSelectionTool } from "../tools/ExportSelectionTool.js";
+import { CameraTool } from "../tools/CameraTool.js";
 import { OrbitTool } from "../tools/OrbitTool.js";
 import { FlyTool } from "../tools/FlyTool.js";
 import { ViewTool } from "../tools/ViewTool.js";
@@ -475,6 +476,9 @@ export function load(application)
   const startControllersTool = new StartControllersTool(application);
   const stopControllersTool = new StopControllersTool(application);
   const aboutTool = new AboutTool(application);
+  const websiteTool = new OpenLinkTool(application,
+  { name : "website", label: "tool.website.label", url: "https://bimrocket.github.io",
+    target : "_blank"});
   const githubTool = new OpenLinkTool(application,
   { name : "github", label: "GitHub", url: "https://github.com/bimrocket/bimrocket",
     target : "_blank"});
@@ -621,6 +625,7 @@ export function load(application)
 
   const helpMenu = menuBar.addMenu("menu.help");
   helpMenu.addMenuItem(aboutTool);
+  helpMenu.addMenuItem(websiteTool);
   helpMenu.addMenuItem(githubTool);
 
   // add tools to toolbar
@@ -722,6 +727,15 @@ export function load(application)
 
   // select baseObject
   application.selection.set(application.baseObject);
+
+  // init camera tools
+  CameraTool.init(application,
+  {
+    defaultCameraToolName : "orbit",
+    activateOnStartUp : true,
+    activateOnAltKey : true,
+    activateOnClear : true
+  });
 
   // globals
   const GLOBALS =
