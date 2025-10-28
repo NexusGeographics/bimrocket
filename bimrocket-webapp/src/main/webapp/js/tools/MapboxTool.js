@@ -65,7 +65,7 @@ class MapboxTool extends Tool
     input.type = "text";
     input.style.width = "95%";
     input.style.padding = "8px";
-    input.value = "pk.eyJ1Ijoic21vdS1uZXh1cyIsImEiOiJjbWc4NG11eGcwM2F3MmlzYXl5Y280bXhhIn0.NocwZXz1yhMvVBS5ZfnROg";
+    input.value = "pk.eyJ1IjoiYXZhbGxzIiwiYSI6ImNtaDkzMm40NDBhYWMyanIxbnVraGFqY2oifQ.iFeS28_97GcOTB5tUutR-Q";
 
     container.appendChild(label);
     container.appendChild(input);
@@ -148,21 +148,21 @@ class MapboxTool extends Tool
           "jpg70"
         );
         
-       /* const heightProvider = new MapBoxProvider
+       const heightProvider = new MapBoxProvider
         (
           apiKey,
           "mapbox.terrain-rgb",
           MapBoxProvider.MAP_ID,
           "pngraw"
-        );*/
-
-        const heightProvider = new ICGCHeightProvider
-        (
-          apiKey,
-          "mapbox.terrain-rgb",
-          MapBoxProvider.MAP_ID,
-          "png"
         );
+
+        // const heightProvider = new ICGCHeightProvider
+        // (
+        //   apiKey,
+        //   "mapbox.terrain-rgb",
+        //   MapBoxProvider.MAP_ID,
+        //   "png"
+        // );
 
         const mapView = new MapView(MapView.HEIGHT, vectorProvider, heightProvider);
         mapView.name = "MapboxView";

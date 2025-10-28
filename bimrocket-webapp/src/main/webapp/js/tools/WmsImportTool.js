@@ -88,7 +88,7 @@ class WmsImportTool extends Tool
     createDialog()
     {
         const dialog = new Dialog("Importar capa WMS");
-        dialog.setSize(400, 350);
+        dialog.setSize(400, 450); // Increased height to accommodate checkboxes
         dialog.setI18N(this.application.i18n);
 
         const createLabeledInput = (labelText) => 
@@ -109,6 +109,28 @@ class WmsImportTool extends Tool
             container.appendChild(label);
             container.appendChild(input);
             return { container, input };
+        };
+
+        const createCheckbox = (labelText, id) =>
+        {
+            const container = document.createElement("div");
+            container.style.marginTop = "10px";
+            container.style.display = "flex";
+            container.style.alignItems = "center";
+            
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.id = id;
+            checkbox.style.marginRight = "8px";
+            
+            const label = document.createElement("label");
+            label.textContent = labelText;
+            label.htmlFor = id;
+            label.style.cursor = "pointer";
+            
+            container.appendChild(checkbox);
+            container.appendChild(label);
+            return { container, checkbox };
         };
 
         // Create select for WMS configurations
@@ -133,9 +155,28 @@ class WmsImportTool extends Tool
         const { container: layersContainer, input: layersInput } = createLabeledInput("Capa:");
         const { container: crsContainer, input: crsInput } = createLabeledInput("CRS:");
 
+        // Create height provider checkboxes
+        const { container: mapboxContainer, checkbox: mapboxCheckbox } = createCheckbox("Utilitzar MapBox Height Provider", "mapboxHeight");
+        const { container: icgcContainer, checkbox: icgcCheckbox } = createCheckbox("Utilitzar ICGC Height Provider", "icgcHeight");
+
         this.urlInput = urlInput;
         this.layersInput = layersInput;
         this.crsInput = crsInput;
+        this.mapboxCheckbox = mapboxCheckbox;
+        this.icgcCheckbox = icgcCheckbox;
+
+        // Add mutual exclusion logic for checkboxes
+        mapboxCheckbox.addEventListener("change", () => {
+            if (mapboxCheckbox.checked) {
+                icgcCheckbox.checked = false;
+            }
+        });
+
+        icgcCheckbox.addEventListener("change", () => {
+            if (icgcCheckbox.checked) {
+                mapboxCheckbox.checked = false;
+            }
+        });
 
         // Add options to select
         Object.entries(this.wmsConfigs).forEach(([key, config]) =>
@@ -159,6 +200,8 @@ class WmsImportTool extends Tool
         dialog.bodyElem.appendChild(urlContainer);
         dialog.bodyElem.appendChild(layersContainer);
         dialog.bodyElem.appendChild(crsContainer);
+        dialog.bodyElem.appendChild(mapboxContainer);
+        dialog.bodyElem.appendChild(icgcContainer);
 
         // Trigger initial load
         configSelect.dispatchEvent(new Event("change"));
@@ -176,6 +219,8 @@ class WmsImportTool extends Tool
         const url = this.urlInput.value;
         const layers = this.layersInput.value;
         const crs = this.crsInput.value;
+        const useMapboxHeight = this.mapboxCheckbox.checked;
+        const useIcgcHeight = this.icgcCheckbox.checked;
         const application = this.application;
 
         //TODO: traduccions
@@ -184,26 +229,28 @@ class WmsImportTool extends Tool
             return;
         }
 
-            const wmsLayerGroup = new THREE.Group();
-            wmsLayerGroup.name = "WMS Layer - " + layers;
+        const wmsLayerGroup = new THREE.Group();
+        wmsLayerGroup.name = "WMS Layer - " + layers;
 
-            if (!wmsLayerGroup.controllers)
-            {
-                wmsLayerGroup.controllers = {};
-            }
+        if (!wmsLayerGroup.controllers)
+        {
+            wmsLayerGroup.controllers = {};
+        }
 
-            const controller = new WMSController(wmsLayerGroup, "wms_controller");
-            controller.url = url;
-            controller.layers = layers;
-            controller.crs = crs;
-            
-            wmsLayerGroup.controllers["wms_controller"] = controller;
-            
-            this.wmsLayerGroup = wmsLayerGroup;
-            this.wmsController = controller;
+        const controller = new WMSController(wmsLayerGroup, "wms_controller");
+        controller.url = url;
+        controller.layers = layers;
+        controller.crs = crs;
+        controller.useMapboxHeight = useMapboxHeight;
+        controller.useIcgcHeight = useIcgcHeight;
+        
+        wmsLayerGroup.controllers["wms_controller"] = controller;
+        
+        this.wmsLayerGroup = wmsLayerGroup;
+        this.wmsController = controller;
 
-            application.addObject(this.wmsLayerGroup, application.baseObject);
-            application.initControllers(this.wmsLayerGroup);
+        application.addObject(this.wmsLayerGroup, application.baseObject);
+        application.initControllers(this.wmsLayerGroup);
         this.closeDialog();
     }
 

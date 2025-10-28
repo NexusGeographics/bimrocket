@@ -8,7 +8,8 @@ import { Controller } from "./Controller.js";
 import { MessageDialog } from "../ui/MessageDialog.js";
 import { WMSLoader } from "../io/gis/WMSLoader.js";
 import * as THREE from "three";
-import { MapView } from "geo-three";
+import { MapView, MapBoxProvider } from "geo-three";
+import { ICGCHeightProvider } from "../io/gis/ICGCHeightProvider.js";
 import proj4 from 'proj4';
 
 // Assegurem que les projeccions estiguin definides
@@ -22,13 +23,15 @@ if (!proj4.defs["EPSG:25831"]) {
 class WMSController extends Controller
 {
   // static MAP_VIEW_NAME = "_wms_map_view";
-
+  
   constructor(object, name)
   {
     super(object, name);
     this.url = "";
     this.layers = "";
     this.crs = "EPSG:3857";
+    this.useMapboxHeight = false;
+    this.useIcgcHeight = false;
 
     this._mapView = null;
     this._onNodeChanged = this.onNodeChanged.bind(this);
@@ -36,6 +39,8 @@ class WMSController extends Controller
     this._lastUrl = null;
     this._lastLayers = null;
     this._lastCrs = null;
+    this._lastUseMapboxHeight = false;
+    this._lastUseIcgcHeight = false;
     this._lastOrigin = new THREE.Vector2();
 
     this.autoStart = true;
@@ -60,7 +65,9 @@ class WMSController extends Controller
     {
       if (this.url !== this._lastUrl || 
           this.layers !== this._lastLayers || 
-          this.crs !== this._lastCrs)
+          this.crs !== this._lastCrs ||
+          this.useMapboxHeight !== this._lastUseMapboxHeight ||
+          this.useIcgcHeight !== this._lastUseIcgcHeight)
       {
         if (this.layers !== this._lastLayers && this.layers)
         {
@@ -87,6 +94,8 @@ class WMSController extends Controller
     this._lastUrl = this.url;
     this._lastLayers = this.layers;
     this._lastCrs = this.crs;
+    this._lastUseMapboxHeight = this.useMapboxHeight;
+    this._lastUseIcgcHeight = this.useIcgcHeight;
 
     if (this.layers)
     {
@@ -98,25 +107,44 @@ class WMSController extends Controller
       const application = this.application;
       const camera = application.camera;
       const provider = new WMSLoader(this.url, this.layers, this.crs);
+      
+      let heightProvider = null;
+      let mapView = null;
+      
+      if (this.useMapboxHeight) {
+        const mapboxApiKey = "pk.eyJ1IjoiYXZhbGxzIiwiYSI6ImNtaDkzMm40NDBhYWMyanIxbnVraGFqY2oifQ.iFeS28_97GcOTB5tUutR-Q";
+        heightProvider = new MapBoxProvider(
+          mapboxApiKey,
+          "mapbox.terrain-rgb",
+          MapBoxProvider.MAP_ID,
+          "pngraw"
+        );
+        mapView = new MapView(MapView.HEIGHT, provider, heightProvider);
+      } else if (this.useIcgcHeight) {
+        heightProvider = new ICGCHeightProvider();
+        mapView = new MapView(MapView.HEIGHT, provider, heightProvider);
+      } else {
+        mapView = new MapView(MapView.PLANAR, provider, camera);
+      }
+      
       const renderer = new THREE.WebGLRenderer();
-      const mapViewGeoT = new MapView(MapView.PLANAR, provider, camera);
       
       provider.minZoom = 13;
       camera.position.z += 0.00001;
-      mapViewGeoT.name = "MapView";
-      mapViewGeoT.subDivisionsRays = 64;
+      mapView.name = "MapView";
+      mapView.subDivisionsRays = 64;
       renderer.render(application.scene, camera);
 
       function animate() 
       {
           requestAnimationFrame(animate);
-          mapViewGeoT.updateMatrixWorld(camera);
+          mapView.updateMatrixWorld(camera);
           renderer.render(application.scene, camera);
       }
             
       animate();
       
-      this._mapView = mapViewGeoT;
+      this._mapView = mapView;
 
       this.object.add(this._mapView);
 
