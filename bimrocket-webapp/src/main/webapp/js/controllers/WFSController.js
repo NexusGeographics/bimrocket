@@ -208,15 +208,11 @@ class WFSController extends Controller
     loader = isGML ? new GMLLoader() : new GeoJSONLoader();
     
     const version = isGML ? "1.1.0" : this.version;
-    url += "service=wfs&version=" + version + 
-         "&request=GetFeature" +
-         "&typeName=" + layer;
+    const outputFormat = this.outputFormat?.length ? this.outputFormat : loader.mimeType;
     
-    const outputFormat = this.outputFormat;
-    if (outputFormat && outputFormat.length > 0)
-    {
-      url += "&outputFormat=" + outputFormat;
-    }
+    url += "service=wfs&version=" + version + 
+         "&request=GetFeature&outputFormat=" + outputFormat + 
+         "&typeName=" + layer;
     const count = this.count;
     if (count > 0)
     {
