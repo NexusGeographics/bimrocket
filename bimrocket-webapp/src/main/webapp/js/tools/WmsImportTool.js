@@ -26,9 +26,9 @@ class WmsImportTool extends Tool
         {
             "icgc_orto_div_proxy":
             {
-                label: "ICGC - Divisions + Orto",
+                label: "ICGC - Divisions + Orto + Espais Naturals",
                 url: "https://geoserver.nexusgeografics.com/geoserver/bimrocket/wms",
-                layer: "icgc_orto_divisions",
+                layer: "icgc_orto_demo",
                 crs: "EPSG:3857"
             },
             "icgc_topo":
@@ -88,7 +88,7 @@ class WmsImportTool extends Tool
     createDialog()
     {
         const dialog = new Dialog("Importar capa WMS");
-        dialog.setSize(400, 450); // Increased height to accommodate checkboxes
+        dialog.setSize(400, 400);
         dialog.setI18N(this.application.i18n);
 
         const createLabeledInput = (labelText) => 
@@ -157,26 +157,26 @@ class WmsImportTool extends Tool
 
         // Create height provider checkboxes
         const { container: mapboxContainer, checkbox: mapboxCheckbox } = createCheckbox("Utilitzar MapBox Height Provider", "mapboxHeight");
-        const { container: icgcContainer, checkbox: icgcCheckbox } = createCheckbox("Utilitzar ICGC Height Provider", "icgcHeight");
+        // const { container: icgcContainer, checkbox: icgcCheckbox } = createCheckbox("Utilitzar ICGC Height Provider", "icgcHeight");
 
         this.urlInput = urlInput;
         this.layersInput = layersInput;
         this.crsInput = crsInput;
         this.mapboxCheckbox = mapboxCheckbox;
-        this.icgcCheckbox = icgcCheckbox;
+        // this.icgcCheckbox = icgcCheckbox;
 
         // Add mutual exclusion logic for checkboxes
-        mapboxCheckbox.addEventListener("change", () => {
-            if (mapboxCheckbox.checked) {
-                icgcCheckbox.checked = false;
-            }
-        });
+        // mapboxCheckbox.addEventListener("change", () => {
+        //     if (mapboxCheckbox.checked) {
+        //         icgcCheckbox.checked = false;
+        //     }
+        // });
 
-        icgcCheckbox.addEventListener("change", () => {
-            if (icgcCheckbox.checked) {
-                mapboxCheckbox.checked = false;
-            }
-        });
+        // icgcCheckbox.addEventListener("change", () => {
+        //     if (icgcCheckbox.checked) {
+        //         mapboxCheckbox.checked = false;
+        //     }
+        // });
 
         // Add options to select
         Object.entries(this.wmsConfigs).forEach(([key, config]) =>
@@ -201,7 +201,7 @@ class WmsImportTool extends Tool
         dialog.bodyElem.appendChild(layersContainer);
         dialog.bodyElem.appendChild(crsContainer);
         dialog.bodyElem.appendChild(mapboxContainer);
-        dialog.bodyElem.appendChild(icgcContainer);
+        // dialog.bodyElem.appendChild(icgcContainer);
 
         // Trigger initial load
         configSelect.dispatchEvent(new Event("change"));
@@ -220,7 +220,7 @@ class WmsImportTool extends Tool
         const layers = this.layersInput.value;
         const crs = this.crsInput.value;
         const useMapboxHeight = this.mapboxCheckbox.checked;
-        const useIcgcHeight = this.icgcCheckbox.checked;
+        // const useIcgcHeight = this.icgcCheckbox.checked;
         const application = this.application;
 
         //TODO: traduccions
@@ -242,7 +242,7 @@ class WmsImportTool extends Tool
         controller.layers = layers;
         controller.crs = crs;
         controller.useMapboxHeight = useMapboxHeight;
-        controller.useIcgcHeight = useIcgcHeight;
+        // controller.useIcgcHeight = useIcgcHeight;
         
         wmsLayerGroup.controllers["wms_controller"] = controller;
         
