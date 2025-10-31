@@ -88,6 +88,7 @@ class WmsImportTool extends Tool
     createDialog()
     {
         const dialog = new Dialog("Importar capa WMS");
+        dialog.onHide = () => this.application.useTool(null);
         dialog.setSize(400, 400);
         dialog.setI18N(this.application.i18n);
 
@@ -251,7 +252,7 @@ class WmsImportTool extends Tool
 
         application.addObject(this.wmsLayerGroup, application.baseObject);
         application.initControllers(this.wmsLayerGroup);
-        this.closeDialog();
+        this.application.useTool(null);
     }
 
     cleanup()
@@ -271,7 +272,7 @@ class WmsImportTool extends Tool
 
     closeDialog()
     {
-        this.dialog.hide();
+        this.application.useTool(null);
     }
 }
 
