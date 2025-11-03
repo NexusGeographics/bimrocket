@@ -78,13 +78,11 @@ class GMLLoader extends GISLoader
 
   load(source, onLoad, onProgress, onError)
   {
-
     const options = this.options;
     if (options.origin)
     {
       this.origin.copy(options.origin);
     }
-
     const scope = this;
     const onParseComplete = (gmlText) => {
       return scope.parse(gmlText)
@@ -122,8 +120,6 @@ class GMLLoader extends GISLoader
         const loader = new THREE.FileLoader(this.manager);
         loader.setPath(this.path);
         loader.setResponseType('text');
-        
-        // Afegir Basic Auth header
         const headers = this.requestHeader || {};
         if (options.username && options.password) {
             const base64Credentials = btoa(options.username + ':' + options.password);
@@ -131,7 +127,6 @@ class GMLLoader extends GISLoader
             loader.setWithCredentials(true);
         }
         loader.setRequestHeader(headers);
-        
         loader.load(source, onParseComplete, onProgress, onError);
       }
       else
