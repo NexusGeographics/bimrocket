@@ -94,6 +94,8 @@ services:
       - https://gis.santfeliu.cat/geoserver/wfs
       - https://gis.santfeliu.cat/geoserver/ 
       - https://gis.santfeliu.cat/
+      - https://sig.gencat.cat/
+      - https://geoserver.nexusgeografics.com/
     aliases:
       chatgpt:
         url: https://api.openai.com/v1/chat/completions
