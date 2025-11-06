@@ -1,3 +1,9 @@
+/**
+ * WMSImportTool.js
+ *
+ * @author nexus
+ */
+
 import { MapProvider } from "geo-three";
 
 //BBOX del mon
