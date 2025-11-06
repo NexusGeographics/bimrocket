@@ -9,7 +9,6 @@ import { MessageDialog } from "../ui/MessageDialog.js";
 import { WMSLoader } from "../io/gis/WMSLoader.js";
 import * as THREE from "three";
 import { MapView, MapBoxProvider } from "geo-three";
-import { ICGCHeightProvider } from "../io/gis/ICGCHeightProvider.js";
 import proj4 from 'proj4';
 
 // Assegurem que les projeccions estiguin definides
@@ -84,10 +83,9 @@ class WMSController extends Controller
     this.removeMap();
 
     if (!this.url || !this.layers || !this.crs) return;
-    //TODO: traduccions
     if (this.crs.toUpperCase() !== "EPSG:3857")
     {
-        MessageDialog.create("ERROR", `WMSController: CRS must be EPSG:3857, but got ${this.crs}.`).setI18N(this.application.i18n).show();
+        MessageDialog.create("ERROR", "message.wms_controller_invalid_crs", { crs: this.crs }).setI18N(this.application.i18n).show();
         return;
     }
 
@@ -119,9 +117,6 @@ class WMSController extends Controller
           MapBoxProvider.MAP_ID,
           "pngraw"
         );
-        mapView = new MapView(MapView.HEIGHT, provider, heightProvider);
-      } else if (this.useIcgcHeight) {
-        heightProvider = new ICGCHeightProvider();
         mapView = new MapView(MapView.HEIGHT, provider, heightProvider);
       } else {
         mapView = new MapView(MapView.PLANAR, provider, camera);

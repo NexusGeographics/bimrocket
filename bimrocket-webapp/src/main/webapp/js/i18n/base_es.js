@@ -650,6 +650,7 @@ export const translations =
   "message.action_denied" : "Acción denegada.",
 
   "message.invalid_revolution_axis" : "Eje de revolución inválido. Este eje no se puede proyectar sobre el plano del perfil.",
+  "message.wms_controller_invalid_crs" : params => `WMSController: El CRS debe ser EPSG:3857, pero se recibió ${params.crs}.`,
 
   "message.select_source_object" : "Selecciona el objeto origen, introduce el nombre del enlace y pulsa el botón [Siguiente].",
   "message.select_target_object" : "Selecciona el objeto destino y pulsa el botón [Enlazar].",

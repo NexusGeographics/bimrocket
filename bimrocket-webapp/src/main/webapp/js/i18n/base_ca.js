@@ -650,6 +650,7 @@ export const translations =
   "message.action_denied" : "Acció denegada.",
 
   "message.invalid_revolution_axis" : "Eix de revolució invàlid. Aquest eix no es pot projectar sobre el pla del perfil.",
+  "message.wms_controller_invalid_crs" : params => `WMSController: El CRS ha de ser EPSG:3857, però s'ha rebut ${params.crs}.`,
 
   "message.select_source_object" : "Selecciona l'objecte origen, introdueix el nom de l'enllaç i prem el botó [Següent].",
   "message.select_target_object" : "Selecciona l'objecte destí i prem el botó [Enllaça].",
