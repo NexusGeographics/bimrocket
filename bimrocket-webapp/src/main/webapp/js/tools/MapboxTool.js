@@ -1,3 +1,9 @@
+/**
+ * WMSImportTool.js
+ *
+ * @author nexus
+ */
+
 import { Tool } from "./Tool.js";
 import { Dialog } from "../ui/Dialog.js";
 import { MessageDialog } from "../ui/MessageDialog.js";
@@ -51,7 +57,6 @@ class MapboxTool extends Tool
     dialog.setSize(400, 300);
     dialog.setI18N(this.application.i18n);
 
-    // API Key input container
     const container = document.createElement("div");
     container.style.marginTop = "10px";
 
@@ -69,7 +74,6 @@ class MapboxTool extends Tool
     container.appendChild(label);
     container.appendChild(input);
 
-    // Debug checkbox container
     const debugContainer = document.createElement("div");
     debugContainer.style.marginTop = "15px";
 

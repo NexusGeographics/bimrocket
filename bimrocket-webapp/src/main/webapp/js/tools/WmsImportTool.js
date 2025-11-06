@@ -22,7 +22,6 @@ class WMSImportTool extends Tool
         this.className = "wmsImport";
         this.immediate = false;
         
-        // Move wmsConfigs initialization before dialog creation
         this.wmsConfigs = 
         {
             "icgc_orto_div_proxy":
@@ -135,7 +134,6 @@ class WMSImportTool extends Tool
             return { container, checkbox };
         };
 
-        // Create select for WMS configurations
         const selectContainer = document.createElement("div");
         selectContainer.style.marginTop = "10px";
 
@@ -205,7 +203,6 @@ class WMSImportTool extends Tool
         const layers = this.layersInput.value;
         const crs = this.crsInput.value;
         const useMapboxHeight = this.mapboxCheckbox.checked;
-        // const useIcgcHeight = this.icgcCheckbox.checked;
         const application = this.application;
 
         if (!url || !layers || !crs) {
@@ -226,7 +223,6 @@ class WMSImportTool extends Tool
         controller.layers = layers;
         controller.crs = crs;
         controller.useMapboxHeight = useMapboxHeight;
-        // controller.useIcgcHeight = useIcgcHeight;
         
         wmsLayerGroup.controllers["wms_controller"] = controller;
         
