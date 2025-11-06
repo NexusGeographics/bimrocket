@@ -121,8 +121,14 @@ export const translations =
   "tool.openlocal.help" : "Open from local disk",
 
 /* wms import tool */
-  "tool.wms_import.label" : "Enter the wms url",
-  "tool.wms_import.help" : "Enter the wms url",
+  "tool.wms_import.label" : "Import WMS layer",
+  "tool.wms_import.help" : "Imports a layer from a WMS service",
+  "tool.wms_import.title" : "Import WMS layer",
+  "tool.wms_import.select_config" : "Select WMS configuration:",
+  "tool.wms_import.url" : "URL:",
+  "tool.wms_import.layer" : "Layer:",
+  "tool.wms_import.crs" : "CRS:",
+  "tool.wms_import.use_mapbox_height" : "Use MapBox Height Provider",
 
   "tool.savelocal.label" : "Save to local disk",
   "tool.savelocal.help" : "Save to local disk",
@@ -590,7 +596,7 @@ export const translations =
   "title.object_builder" : "Object builder",
   "title.select_by_property" : "Selection by properties",
   "title.select_by_qrcode" : "Selection by QR code",
-  "title.wms_import" : "Enter de WMS service URL",
+  "title.wms_import" : "Import WMS layer",
   "title.export_selection" : "Export selection",
   "title.login" : "Login",
   "title.new_material" : "New material",
@@ -606,6 +612,7 @@ export const translations =
   "message.measure_length" : (length, units) => `Length: ${length} ${units}`,
   "message.measure_area" : (area, units) => `Area: ${area} ${units}2`,
   "message.measure_angle" : angle => `Angle: ${angle} degrees`,
+  "message.wms_import_tool_fields_required" : "URL, Layer and CRS are required.",
 
   "message.solid_count" : count => `Solid count: ${count}`,
   "message.mesh_count" : count => `Mesh count: ${count}`,

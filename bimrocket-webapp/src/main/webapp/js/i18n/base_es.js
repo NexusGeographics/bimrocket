@@ -123,6 +123,12 @@ export const translations =
 /* wms import tool */
   "tool.wms_import.label" : "Introducir url del wms",
   "tool.wms_import.help" : "Introducir url del wms",
+  "tool.wms_import.title" : "Importar capa WMS",
+  "tool.wms_import.select_config" : "Selecciona configuración WMS:",
+  "tool.wms_import.url" : "URL:",
+  "tool.wms_import.layer" : "Capa:",
+  "tool.wms_import.crs" : "CRS:",
+  "tool.wms_import.use_mapbox_height" : "Utilizar MapBox Height Provider",
 
   "tool.savelocal.label" : "Guardar en local",
   "tool.savelocal.help" : "Guardar en local",
@@ -423,6 +429,10 @@ export const translations =
   "label.service_credentials_alias" : "Alias de credenciales:",
   "label.service_user" : "Usuario:",
   "label.service_pass" : "Contraseña:",
+  "label.layer" : "Capa:",
+  "label.crs" : "CRS:",
+  "label.wms_select_config" : "Selecciona configuración WMS:",
+  "label.use_mapbox_height" : "Utilizar MapBox Height Provider",
 
   "label.section_color" : "Color de sección:",
   "label.smooth_angle" : "Ángulo de suavizado:",
@@ -606,6 +616,7 @@ export const translations =
   "message.measure_length" : (length, units) => `Longitud: ${length} ${units}`,
   "message.measure_area" : (area, units) => `Área: ${area} ${units}2`,
   "message.measure_angle" : angle => `Ángulo: ${angle} grados`,
+  "message.wms_import_tool_fields_required" : "URL, capa y CRS son obligatorios.",
 
   "message.solid_count" : count => `Número de sólidos: ${count}`,
   "message.mesh_count" : count => `Número de mallas: ${count}`,

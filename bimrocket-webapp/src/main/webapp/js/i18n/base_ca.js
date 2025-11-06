@@ -123,6 +123,12 @@ export const translations =
 /* wms import tool */
   "tool.wms_import.label" : "Introduir l'url del wms",
   "tool.wms_import.help" : "Introdueix l'url del wms",
+  "tool.wms_import.title" : "Importar capa WMS",
+  "tool.wms_import.select_config" : "Selecciona configuració WMS:",
+  "tool.wms_import.url" : "URL:",
+  "tool.wms_import.layer" : "Capa:",
+  "tool.wms_import.crs" : "CRS:",
+  "tool.wms_import.use_mapbox_height" : "Utilitzar MapBox Height Provider",
 
   "tool.savelocal.label" : "Desa en disc local",
   "tool.savelocal.help" : "Desa en disc local",
@@ -423,6 +429,10 @@ export const translations =
   "label.service_credentials_alias" : "Àlies de credencials:",
   "label.service_user" : "Usuari:",
   "label.service_pass" : "Paraula de pas:",
+  "label.layer" : "Capa:",
+  "label.crs" : "CRS:",
+  "label.wms_select_config" : "Selecciona configuració WMS:",
+  "label.use_mapbox_height" : "Utilitzar MapBox Height Provider",
 
   "label.section_color" : "Color de secció:",
   "label.smooth_angle" : "Angle de suavitzat:",
@@ -606,6 +616,7 @@ export const translations =
   "message.measure_length" : (length, units) => `Longitud: ${length} ${units}`,
   "message.measure_area" : (area, units) => `Àrea: ${area} ${units}2`,
   "message.measure_angle" : angle => `Angle: ${angle} graus`,
+  "message.wms_import_tool_fields_required" : "URL, capa i CRS són obligatoris.",
 
   "message.solid_count" : count => `Nombre de sòlids: ${count}`,
   "message.mesh_count" : count => `Nombre de malles: ${count}`,

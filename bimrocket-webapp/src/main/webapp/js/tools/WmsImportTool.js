@@ -9,6 +9,7 @@ import { Dialog } from "../ui/Dialog.js";
 import { WMSController } from "../controllers/WMSController.js";
 import { MessageDialog } from "../ui/MessageDialog.js";
 import * as THREE from "three";
+import { I18N } from "../i18n/I18N.js";
 
 class WmsImportTool extends Tool
 {
@@ -87,7 +88,7 @@ class WmsImportTool extends Tool
 
     createDialog()
     {
-        const dialog = new Dialog("Importar capa WMS");
+        const dialog = new Dialog("tool.wms_import.title");
         dialog.onHide = () => this.application.useTool(null);
         dialog.setSize(400, 400);
         dialog.setI18N(this.application.i18n);
@@ -98,7 +99,7 @@ class WmsImportTool extends Tool
             container.style.marginTop = "10px";
             
             const label = document.createElement("label");
-            label.textContent = labelText;
+            I18N.set(label, "textContent", labelText);
             label.style.display = "block";
             label.style.marginBottom = "5px";
             
@@ -125,7 +126,7 @@ class WmsImportTool extends Tool
             checkbox.style.marginRight = "8px";
             
             const label = document.createElement("label");
-            label.textContent = labelText;
+            I18N.set(label, "textContent", labelText);
             label.htmlFor = id;
             label.style.cursor = "pointer";
             
@@ -139,7 +140,7 @@ class WmsImportTool extends Tool
         selectContainer.style.marginTop = "10px";
 
         const selectLabel = document.createElement("label");
-        selectLabel.textContent = "Selecciona configuració WMS:";
+        I18N.set(selectLabel, "textContent", "tool.wms_import.select_config");
         selectLabel.style.display = "block";
         selectLabel.style.marginBottom = "5px";
         
@@ -152,32 +153,17 @@ class WmsImportTool extends Tool
         dialog.bodyElem.appendChild(selectContainer);
 
         // Create labeled inputs
-        const { container: urlContainer, input: urlInput } = createLabeledInput("URL:");
-        const { container: layersContainer, input: layersInput } = createLabeledInput("Capa:");
-        const { container: crsContainer, input: crsInput } = createLabeledInput("CRS:");
+        const { container: urlContainer, input: urlInput } = createLabeledInput("tool.wms_import.url");
+        const { container: layersContainer, input: layersInput } = createLabeledInput("tool.wms_import.layer");
+        const { container: crsContainer, input: crsInput } = createLabeledInput("tool.wms_import.crs");
 
-        // Create height provider checkboxes
-        const { container: mapboxContainer, checkbox: mapboxCheckbox } = createCheckbox("Utilitzar MapBox Height Provider", "mapboxHeight");
-        // const { container: icgcContainer, checkbox: icgcCheckbox } = createCheckbox("Utilitzar ICGC Height Provider", "icgcHeight");
+        // Create checkbox
+        const { container: mapboxContainer, checkbox: mapboxCheckbox } = createCheckbox("tool.wms_import.use_mapbox_height", "mapboxHeight");
 
         this.urlInput = urlInput;
         this.layersInput = layersInput;
         this.crsInput = crsInput;
         this.mapboxCheckbox = mapboxCheckbox;
-        // this.icgcCheckbox = icgcCheckbox;
-
-        // Add mutual exclusion logic for checkboxes
-        // mapboxCheckbox.addEventListener("change", () => {
-        //     if (mapboxCheckbox.checked) {
-        //         icgcCheckbox.checked = false;
-        //     }
-        // });
-
-        // icgcCheckbox.addEventListener("change", () => {
-        //     if (icgcCheckbox.checked) {
-        //         mapboxCheckbox.checked = false;
-        //     }
-        // });
 
         // Add options to select
         Object.entries(this.wmsConfigs).forEach(([key, config]) =>
@@ -202,9 +188,7 @@ class WmsImportTool extends Tool
         dialog.bodyElem.appendChild(layersContainer);
         dialog.bodyElem.appendChild(crsContainer);
         dialog.bodyElem.appendChild(mapboxContainer);
-        // dialog.bodyElem.appendChild(icgcContainer);
 
-        // Trigger initial load
         configSelect.dispatchEvent(new Event("change"));
 
         dialog.addButton("import", "button.accept", () => this.addWMS());
@@ -224,9 +208,8 @@ class WmsImportTool extends Tool
         // const useIcgcHeight = this.icgcCheckbox.checked;
         const application = this.application;
 
-        //TODO: traduccions
         if (!url || !layers || !crs) {
-            MessageDialog.create("ERROR", "URL, capa i CRS són obligatoris.").setI18N(application.i18n).show();
+            MessageDialog.create("ERROR", "message.wms_import_tool_fields_required").setI18N(application.i18n).show();
             return;
         }
 
