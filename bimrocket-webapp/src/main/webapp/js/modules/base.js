@@ -12,7 +12,7 @@ import { OpenLocalTool } from "../tools/OpenLocalTool.js";
  * eines per importar WMS a partir de interfície 
  * d'usuari
  **********************************************/
-// import { WmsImportTool } from "../tools/WmsImportTool.js";
+// import { WMSImportTool } from "../tools/WMSImportTool.js";
 // import { MapboxTool } from "../tools/MapboxTool.js";
 import { SaveLocalTool } from "../tools/SaveLocalTool.js";
 import { OptionsTool } from "../tools/OptionsTool.js";
@@ -283,7 +283,7 @@ export function load(application)
  * eines per importar WMS a partir de interfície 
  * d'usuari
  **********************************************/
-  // const wmsImportTool = new WmsImportTool(application);
+  // const wmsImportTool = new WMSImportTool(application);
   // const mapboxTool = new MapboxTool(application);
   const saveLocalTool = new SaveLocalTool(application);
   const optionsTool = new OptionsTool(application);

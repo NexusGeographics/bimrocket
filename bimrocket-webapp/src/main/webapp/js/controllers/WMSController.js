@@ -154,8 +154,6 @@ class WMSController extends Controller
       this.object.updateMatrixWorld(true);
 
       application.notifyObjectsChanged(this.object, this);
-
-      console.log(`[WMSController] WMS layer '${this.layers}' created.`);
     } 
     catch (err)
     {

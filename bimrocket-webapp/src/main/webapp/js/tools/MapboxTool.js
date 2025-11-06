@@ -99,8 +99,6 @@ class MapboxTool extends Tool
 
   importMapbox()
   {
-    console.log("--- [DEBUG] Iniciant importació Mapbox ---");
-    console.log("key:", this.apiKeyInput.value);
     this.cleanup();
 
     const apiKey = this.apiKeyInput.value;
@@ -135,7 +133,6 @@ class MapboxTool extends Tool
         application.notifyObjectsChanged(camera, this);
 
         this.closeDialog();
-        console.log("--- [DEBUG] Importació Debug Layer finalitzada. ---");
       }
       else
       {
@@ -175,7 +172,6 @@ class MapboxTool extends Tool
 
         this.closeDialog();
 
-        console.log("--- [DEBUG] Importació Mapbox amb height finalitzada. ---");
       }
     }
     catch (err)

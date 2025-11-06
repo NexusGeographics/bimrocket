@@ -1,5 +1,5 @@
 /**
- * WmsImportTool.js
+ * WMSImportTool.js
  *
  * @author nexus
  */
@@ -11,7 +11,7 @@ import { MessageDialog } from "../ui/MessageDialog.js";
 import * as THREE from "three";
 import { I18N } from "../i18n/I18N.js";
 
-class WmsImportTool extends Tool
+class WMSImportTool extends Tool
 {
     constructor(application, options)
     {
@@ -259,4 +259,4 @@ class WmsImportTool extends Tool
     }
 }
 
-export { WmsImportTool };
+export { WMSImportTool };
